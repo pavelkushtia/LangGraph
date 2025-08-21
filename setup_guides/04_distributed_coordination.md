@@ -11,7 +11,7 @@ Configure your machines for optimal load distribution, failover, and coordinatio
 # On each machine, set static IPs for reliability
 # Example for Ubuntu/Debian
 
-# Jetson Orin Nano
+# jetson-node (Jetson Orin Nano)
 sudo tee /etc/netplan/01-static.yaml << EOF
 network:
   version: 2
@@ -19,7 +19,7 @@ network:
     eth0:  # or your interface name
       dhcp4: false
       addresses:
-        - 192.168.1.100/24
+        - 192.168.1.177/24
       gateway4: 192.168.1.1
       nameservers:
         addresses: [8.8.8.8, 1.1.1.1]
@@ -35,11 +35,10 @@ sudo netplan apply
 ssh-keygen -t rsa -b 4096 -f ~/.ssh/cluster_key
 
 # Copy to all machines
-ssh-copy-id -i ~/.ssh/cluster_key.pub user@192.168.1.100  # Jetson
-ssh-copy-id -i ~/.ssh/cluster_key.pub user@192.168.1.102  # CPU16A
-ssh-copy-id -i ~/.ssh/cluster_key.pub user@192.168.1.103  # CPU16B
-ssh-copy-id -i ~/.ssh/cluster_key.pub user@192.168.1.104  # CPU8A
-ssh-copy-id -i ~/.ssh/cluster_key.pub user@192.168.1.105  # CPU8B
+ssh-copy-id -i ~/.ssh/cluster_key.pub sanzad@192.168.1.177  # jetson-node
+ssh-copy-id -i ~/.ssh/cluster_key.pub sanzad@192.168.1.178  # rp-node
+ssh-copy-id -i ~/.ssh/cluster_key.pub sanzad@192.168.1.105  # worker-node3
+ssh-copy-id -i ~/.ssh/cluster_key.pub sanzad@192.168.1.137  # worker-node4
 ```
 
 ## Load Balancing and Failover
@@ -72,9 +71,9 @@ frontend llm_frontend
 backend llm_servers
     balance roundrobin
     # Primary: Jetson Ollama (fast responses)
-    server jetson 192.168.1.100:11434 check weight 10
+    server jetson 192.168.1.177:11434 check weight 10
     # Secondary: Local llama.cpp (complex tasks)
-    server cpu_llm 192.168.1.101:8080 check weight 5 backup
+    server cpu_llm 192.168.1.81:8080 check weight 5 backup
 
 # Tools Load Balancer
 frontend tools_frontend
@@ -83,7 +82,7 @@ frontend tools_frontend
 
 backend tools_servers
     balance roundrobin
-    server tools_primary 192.168.1.103:8082 check
+    server tools_primary 192.168.1.105:8082 check
 
 # Embeddings Load Balancer
 frontend embeddings_frontend
@@ -92,7 +91,7 @@ frontend embeddings_frontend
 
 backend embeddings_servers
     balance roundrobin
-    server embeddings_primary 192.168.1.102:8081 check
+    server embeddings_primary 192.168.1.178:8081 check
 
 # Statistics
 stats enable
@@ -135,23 +134,23 @@ logger = logging.getLogger(__name__)
 
 SERVICES = {
     'jetson_ollama': {
-        'url': 'http://192.168.1.100:11434/api/tags',
+        'url': 'http://192.168.1.177:11434/api/tags',
         'critical': True
     },
     'cpu_llama': {
-        'url': 'http://192.168.1.101:8080/health',
+        'url': 'http://192.168.1.81:8080/health',
         'critical': False
     },
     'embeddings': {
-        'url': 'http://192.168.1.102:8081/health',
+        'url': 'http://192.168.1.178:8081/health',
         'critical': True
     },
     'tools': {
-        'url': 'http://192.168.1.103:8082/health',
+        'url': 'http://192.168.1.105:8082/health',
         'critical': True
     },
     'haproxy': {
-        'url': 'http://192.168.1.101:9000',
+        'url': 'http://192.168.1.81:9000',
         'critical': True
     }
 }
@@ -221,10 +220,10 @@ class HealthMonitor:
     def restart_failed_service(self, service_name):
         """Attempt to restart failed services"""
         restart_commands = {
-            'jetson_ollama': 'ssh -i ~/.ssh/cluster_key user@192.168.1.100 "sudo systemctl restart ollama"',
-            'cpu_llama': 'ssh -i ~/.ssh/cluster_key user@192.168.1.101 "sudo systemctl restart llama-server"',
-            'embeddings': 'ssh -i ~/.ssh/cluster_key user@192.168.1.102 "sudo systemctl restart embeddings-server"',
-            'tools': 'ssh -i ~/.ssh/cluster_key user@192.168.1.103 "sudo systemctl restart tools-server"'
+            'jetson_ollama': 'ssh -i ~/.ssh/cluster_key sanzad@192.168.1.177 "sudo systemctl restart ollama"',
+            'cpu_llama': 'ssh -i ~/.ssh/cluster_key sanzad@192.168.1.81 "sudo systemctl restart llama-server"',
+            'embeddings': 'ssh -i ~/.ssh/cluster_key sanzad@192.168.1.178 "sudo systemctl restart embeddings-server"',
+            'tools': 'ssh -i ~/.ssh/cluster_key sanzad@192.168.1.105 "sudo systemctl restart tools-server"'
         }
         
         if service_name in restart_commands:
@@ -320,7 +319,8 @@ class ModelScaler:
     def get_system_load(self, machine_ip: str) -> Dict:
         """Get system load from a machine"""
         try:
-            response = requests.get(f"http://{machine_ip}:8083/system_stats", timeout=5)
+            # Use worker-node4 for monitoring
+            response = requests.get(f"http://192.168.1.137:8083/system_stats", timeout=5)
             if response.status_code == 200:
                 return response.json()
         except:
@@ -329,7 +329,7 @@ class ModelScaler:
     
     def scale_jetson_models(self):
         """Scale Jetson models based on load"""
-        load_info = self.get_system_load('192.168.1.100')
+        load_info = self.get_system_load('192.168.1.177')
         cpu_load = load_info['cpu_percent']
         memory_load = load_info['memory']['percent']
         
@@ -412,20 +412,19 @@ from typing import List, Dict
 class ClusterOrchestrator:
     def __init__(self):
         self.machines = {
-            'jetson': '192.168.1.100',
-            'cpu_32gb': '192.168.1.101',
-            'cpu_16gb_a': '192.168.1.102',
-            'cpu_16gb_b': '192.168.1.103',
-            'cpu_8gb_a': '192.168.1.104',
-            'cpu_8gb_b': '192.168.1.105'
+            'jetson': '192.168.1.177',      # jetson-node (Orin Nano 8GB)
+            'cpu_32gb': '192.168.1.81',     # cpu-node (32GB coordinator)
+            'rp_node': '192.168.1.178',     # rp-node (8GB ARM, embeddings)
+            'worker_3': '192.168.1.105',    # worker-node3 (6GB VM, tools)
+            'worker_4': '192.168.1.137'     # worker-node4 (6GB VM, monitoring)
         }
     
     def start_cluster(self):
         """Start all services in the correct order"""
         print("🚀 Starting cluster services...")
         
-        # Start core services first
-        self._run_remote_command('cpu_8gb_b', 'sudo systemctl start redis-server')
+        # Start core services first (Redis on main coordinator)
+        self._run_remote_command('cpu_32gb', 'sudo systemctl start redis-server')
         time.sleep(2)
         
         # Start model servers
@@ -434,13 +433,13 @@ class ClusterOrchestrator:
         time.sleep(5)
         
         # Start application services
-        self._run_remote_command('cpu_16gb_a', 'sudo systemctl start embeddings-server')
-        self._run_remote_command('cpu_16gb_b', 'sudo systemctl start tools-server')
+        self._run_remote_command('rp_node', 'sudo systemctl start embeddings-server')
+        self._run_remote_command('worker_3', 'sudo systemctl start tools-server')
         time.sleep(3)
         
         # Start load balancer and monitoring
         self._run_remote_command('cpu_32gb', 'sudo systemctl start haproxy')
-        self._run_remote_command('cpu_8gb_a', 'sudo systemctl start health-monitor')
+        self._run_remote_command('worker_4', 'sudo systemctl start health-monitor')
         
         print("✅ Cluster startup completed!")
     
@@ -449,13 +448,13 @@ class ClusterOrchestrator:
         print("🛑 Stopping cluster services...")
         
         services = [
-            ('cpu_8gb_a', 'health-monitor'),
+            ('worker_4', 'health-monitor'),
             ('cpu_32gb', 'haproxy'),
-            ('cpu_16gb_b', 'tools-server'),
-            ('cpu_16gb_a', 'embeddings-server'),
+            ('worker_3', 'tools-server'),
+            ('rp_node', 'embeddings-server'),
             ('cpu_32gb', 'llama-server'),
             ('jetson', 'ollama'),
-            ('cpu_8gb_b', 'redis-server')
+            ('cpu_32gb', 'redis-server')
         ]
         
         for machine, service in services:
@@ -470,11 +469,10 @@ class ClusterOrchestrator:
         
         services = {
             'jetson': ['ollama'],
-            'cpu_32gb': ['llama-server', 'haproxy'],
-            'cpu_16gb_a': ['embeddings-server'],
-            'cpu_16gb_b': ['tools-server'],
-            'cpu_8gb_a': ['health-monitor'],
-            'cpu_8gb_b': ['redis-server']
+            'cpu_32gb': ['llama-server', 'haproxy', 'redis-server'],
+            'rp_node': ['embeddings-server'],
+            'worker_3': ['tools-server'],
+            'worker_4': ['health-monitor']
         }
         
         for machine, service_list in services.items():

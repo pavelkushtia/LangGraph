@@ -7,40 +7,39 @@ This diagram shows how your hardware is organized for optimal AI workloads:
 ```mermaid
 graph TB
     subgraph "LangGraph Control Layer"
-        LG[LangGraph Orchestrator<br/>CPU 32GB Machine]
+        LG[cpu-node<br/>192.168.1.81<br/>32GB RAM, i5-6500T<br/>LangGraph Orchestrator]
     end
     
     subgraph "Model Inference Layer"
-        JO[Jetson Orin Nano 8GB<br/>Primary LLM Server<br/>Ollama + Small Models<br/>Llama 3.2 3B, Gemma 2B]
-        CPU32[CPU 32GB Machine<br/>Large Model Server<br/>llama.cpp + Quantized<br/>Llama 13B Q4_K_M]
+        JO[jetson-node<br/>192.168.1.177<br/>Orin Nano 8GB<br/>Primary LLM Server<br/>Ollama + Small Models]
+        CPU32[cpu-node<br/>192.168.1.81<br/>32GB RAM<br/>Large Model Server<br/>llama.cpp + Quantized]
     end
     
     subgraph "Worker Nodes"
-        CPU16A[CPU 16GB Machine A<br/>Embeddings + Vector Search<br/>sentence-transformers]
-        CPU16B[CPU 16GB Machine B<br/>Tool Execution<br/>Web scraping, APIs]
-        CPU8A[CPU 8GB Machine A<br/>Monitoring + Logging]
-        CPU8B[CPU 8GB Machine B<br/>Data Processing]
+        RPI[rp-node<br/>192.168.1.178<br/>8GB ARM Cortex-A76<br/>Embeddings + Vector Search]
+        W3[worker-node3<br/>192.168.1.105<br/>6GB VM<br/>Tool Execution]
+        W4[worker-node4<br/>192.168.1.137<br/>6GB VM<br/>Monitoring + Logging]
     end
     
     subgraph "Storage Layer"
-        VDB[Vector Database<br/>ChromaDB/Qdrant]
-        CACHE[Model Cache<br/>Redis/Local Files]
+        VDB[Vector Database<br/>ChromaDB on rp-node]
+        CACHE[Redis Cache<br/>On cpu-node]
     end
     
     LG -->|Task Distribution| JO
     LG -->|Heavy Tasks| CPU32
-    LG -->|Parallel Processing| CPU16A
-    LG -->|Tool Calls| CPU16B
-    LG -->|Coordination| CPU8A
-    LG -->|Data Ops| CPU8B
+    LG -->|Embeddings| RPI
+    LG -->|Tool Calls| W3
+    LG -->|Monitoring| W4
     
     JO -->|Embeddings| VDB
     CPU32 -->|Results| CACHE
-    CPU16A -->|Vector Search| VDB
+    RPI -->|Vector Search| VDB
     
     style JO fill:#e1f5fe
     style CPU32 fill:#f3e5f5
     style LG fill:#e8f5e8
+    style RPI fill:#fff3e0
 ```
 
 ## Network Architecture
@@ -50,12 +49,12 @@ Shows how machines communicate:
 ```mermaid
 graph LR
     subgraph "Your Local Network 192.168.1.x"
-        J[Jetson Orin<br/>192.168.1.100:11434<br/>Ollama API]
-        C1[CPU 32GB<br/>192.168.1.101:8080<br/>llama.cpp + HAProxy]
-        C2[CPU 16GB A<br/>192.168.1.102:8081<br/>Embeddings API]
-        C3[CPU 16GB B<br/>192.168.1.103:8082<br/>Tools API]
-        C4[CPU 8GB A<br/>192.168.1.104:8083<br/>Monitoring]
-        C5[CPU 8GB B<br/>192.168.1.105:6379<br/>Redis Cache]
+        J[jetson-node<br/>192.168.1.177:11434<br/>Ollama API]
+        C1[cpu-node<br/>192.168.1.81:8080<br/>llama.cpp + HAProxy]
+        C2[rp-node<br/>192.168.1.178:8081<br/>Embeddings API]
+        C3[worker-node3<br/>192.168.1.105:8082<br/>Tools API]
+        C4[worker-node4<br/>192.168.1.137:8083<br/>Monitoring]
+        C5[cpu-node<br/>192.168.1.81:6379<br/>Redis Cache]
     end
     
     subgraph "Load Balancer (HAProxy)"
@@ -116,13 +115,12 @@ flowchart TD
 Shows how your 64GB total RAM is distributed:
 
 ```mermaid
-pie title RAM Allocation Across Cluster (64GB Total)
-    "Jetson: Models + OS" : 8
-    "CPU 32GB: Large Models + Orchestration" : 32
-    "CPU 16GB A: Embeddings + Vector DB" : 16
-    "CPU 16GB B: Tools + Services" : 16
-    "CPU 8GB A: Monitoring" : 8
-    "CPU 8GB B: Cache + Processing" : 8
+pie title RAM Allocation Across Cluster (56GB Total Available)
+    "jetson-node: Jetson Orin Nano" : 8
+    "cpu-node: Orchestration + Large Models" : 32
+    "rp-node: ARM Embeddings Server" : 8
+    "worker-node3: Tools (VM)" : 6
+    "worker-node4: Monitoring (VM)" : 6
 ```
 
 ## Power Consumption Comparison
@@ -223,16 +221,24 @@ graph TB
 
 ## Quick Reference
 
-| Component | IP Address | Port | Purpose |
-|-----------|------------|------|---------|
-| Jetson Orin | 192.168.1.100 | 11434 | Primary LLM (Ollama) |
-| CPU 32GB | 192.168.1.101 | 8080, 9000 | Heavy LLM + Load Balancer |
-| CPU 16GB A | 192.168.1.102 | 8081 | Embeddings Server |
-| CPU 16GB B | 192.168.1.103 | 8082 | Tools Server |
-| CPU 8GB A | 192.168.1.104 | 8083 | Monitoring |
-| CPU 8GB B | 192.168.1.105 | 6379 | Redis Cache |
+| Component | Hostname | IP Address | Port | Purpose |
+|-----------|----------|------------|------|---------|
+| Jetson Orin Nano | jetson-node | 192.168.1.177 | 11434 | Primary LLM (Ollama) |
+| CPU 32GB Coordinator | cpu-node | 192.168.1.81 | 8080, 9000, 6379 | Heavy LLM + Load Balancer + Redis |
+| ARM 8GB | rp-node | 192.168.1.178 | 8081 | Embeddings Server |
+| VM 6GB Tools | worker-node3 | 192.168.1.105 | 8082 | Tools Server |
+| VM 6GB Monitor | worker-node4 | 192.168.1.137 | 8083 | Monitoring |
 
 **Load Balanced Endpoints:**
-- LLM: `http://192.168.1.101:9000`
-- Tools: `http://192.168.1.101:9001`  
-- Embeddings: `http://192.168.1.101:9002`
+- LLM: `http://192.168.1.81:9000`
+- Tools: `http://192.168.1.81:9001`  
+- Embeddings: `http://192.168.1.81:9002`
+
+**Available Nodes Status:**
+- ✅ jetson-node (192.168.1.177) - Jetson Orin Nano 8GB
+- ✅ cpu-node (192.168.1.81) - 32GB RAM Intel i5-6500T
+- ✅ rp-node (192.168.1.178) - 8GB ARM Cortex-A76
+- ✅ worker-node3 (192.168.1.105) - 6GB VM
+- ✅ worker-node4 (192.168.1.137) - 6GB VM
+- ❌ cpu-node1, cpu-node2 - Currently unavailable
+- ❌ gpu-node, gpu-node1 - Currently unavailable

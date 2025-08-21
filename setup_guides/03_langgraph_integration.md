@@ -39,7 +39,7 @@ import json
 class JetsonOllamaLLM(LLM):
     """Jetson Orin Nano Ollama LLM"""
     
-    jetson_url: str = "http://JETSON_IP:11434"
+    jetson_url: str = "http://192.168.1.177:11434"
     model_name: str = "llama3.2:3b"
     temperature: float = 0.7
     
@@ -71,7 +71,7 @@ class JetsonOllamaLLM(LLM):
 class CPULlamaLLM(LLM):
     """CPU llama.cpp server LLM - Optional, can use Jetson-only setup"""
     
-    cpu_url: str = "http://CPU32_IP:8080"
+    cpu_url: str = "http://192.168.1.81:8080"
     temperature: float = 0.7
     max_tokens: int = 1000
     
@@ -101,7 +101,7 @@ class CPULlamaLLM(LLM):
 class LocalEmbeddings:
     """Local embeddings from 16GB machine A"""
     
-    def __init__(self, embeddings_url: str = "http://CPU16A_IP:8081"):
+    def __init__(self, embeddings_url: str = "http://192.168.1.178:8081"):
         self.embeddings_url = embeddings_url
     
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
@@ -134,7 +134,7 @@ class WebSearchTool(BaseTool):
     
     def _run(self, query: str) -> str:
         response = requests.post(
-            "http://CPU16B_IP:8082/web_search",
+            "http://192.168.1.105:8082/web_search",
             json={"query": query}
         )
         return response.json()["results"]
@@ -145,7 +145,7 @@ class WebScrapeTool(BaseTool):
     
     def _run(self, url: str) -> str:
         response = requests.post(
-            "http://CPU16B_IP:8082/web_scrape",
+            "http://192.168.1.105:8082/web_scrape",
             json={"url": url}
         )
         return response.json()["content"]
@@ -156,7 +156,7 @@ class CommandExecuteTool(BaseTool):
     
     def _run(self, command: str) -> str:
         response = requests.post(
-            "http://CPU16B_IP:8082/execute_command",
+            "http://192.168.1.105:8082/execute_command",
             json={"command": command}
         )
         result = response.json()
@@ -348,40 +348,40 @@ class ClusterConfig:
     cpu_8gb_a: MachineConfig
     cpu_8gb_b: MachineConfig
 
-# Update these IPs with your actual machine IPs
+# Actual available nodes in your cluster
 CLUSTER = ClusterConfig(
     jetson_orin=MachineConfig(
-        ip="192.168.1.100",  # Replace with actual IP
+        ip="192.168.1.177",  # jetson-node (Orin Nano 8GB)
         port=11434,
         service_type="ollama",
         health_endpoint="/api/tags"
     ),
     cpu_32gb=MachineConfig(
-        ip="192.168.1.101",  # Replace with actual IP
+        ip="192.168.1.81",   # cpu-node (32GB RAM coordinator)
         port=8080,
         service_type="llama_cpp",
         health_endpoint="/health"
     ),
     cpu_16gb_a=MachineConfig(
-        ip="192.168.1.102",  # Replace with actual IP
+        ip="192.168.1.178",  # rp-node (8GB ARM, embeddings)
         port=8081,
         service_type="embeddings",
         health_endpoint="/health"
     ),
     cpu_16gb_b=MachineConfig(
-        ip="192.168.1.103",  # Replace with actual IP
+        ip="192.168.1.105",  # worker-node3 (6GB VM, tools)
         port=8082,
         service_type="tools",
         health_endpoint="/health"
     ),
     cpu_8gb_a=MachineConfig(
-        ip="192.168.1.104",  # Replace with actual IP
+        ip="192.168.1.137",  # worker-node4 (6GB VM, monitoring)
         port=8083,
         service_type="monitoring",
         health_endpoint="/cluster_health"
     ),
     cpu_8gb_b=MachineConfig(
-        ip="192.168.1.105",  # Replace with actual IP
+        ip="192.168.1.81",   # cpu-node also handles redis
         port=6379,
         service_type="redis",
         health_endpoint="/ping"

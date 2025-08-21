@@ -4,12 +4,13 @@ A complete guide to setting up a distributed LangGraph infrastructure using your
 
 ## 🏗️ Architecture Overview
 
-Your optimal setup uses all your hardware efficiently:
+Your optimal setup uses your **available hardware** efficiently:
 
-- **Jetson Orin Nano 8GB**: Primary LLM server (Ollama + small models)
-- **CPU 32GB Machine**: Heavy LLM tasks + coordination (llama.cpp + large models)
-- **CPU 16GB Machines**: Specialized workers (embeddings + tools)
-- **CPU 8GB Machines**: Support services (monitoring + caching)
+- **jetson-node (Orin Nano 8GB)**: Primary LLM server (Ollama + small models)
+- **cpu-node (32GB Intel)**: Coordinator + heavy LLM tasks (llama.cpp + large models)
+- **rp-node (8GB ARM)**: Embeddings server (efficient ARM processing)
+- **worker-node3 (6GB VM)**: Tools execution server
+- **worker-node4 (6GB VM)**: Monitoring and health checks
 
 ## 🚀 Quick Start
 
@@ -53,10 +54,10 @@ python example_workflows.py
 
 | Machine | Model | RAM Usage | Speed | Use Case |
 |---------|-------|-----------|-------|----------|
-| Jetson | Llama 3.2 3B | ~3GB | 15-25 tok/s | General chat |
-| Jetson | TinyLlama 1.1B | ~1.5GB | 30-50 tok/s | Quick responses |
-| CPU 32GB | Llama 13B Q4 | ~8GB | 5-10 tok/s | Complex analysis |
-| CPU 16GB | Embeddings | ~2GB | 100+ emb/s | Vector search |
+| jetson-node | Llama 3.2 3B | ~3GB | 15-25 tok/s | General chat |
+| jetson-node | TinyLlama 1.1B | ~1.5GB | 30-50 tok/s | Quick responses |
+| cpu-node | Llama 13B Q4 | ~8GB | 5-10 tok/s | Complex analysis |
+| rp-node | Embeddings | ~2GB | 50+ emb/s | Vector search (ARM) |
 
 ## 🎯 Example Workflows
 
@@ -80,10 +81,10 @@ result = await data_workflow.invoke("Analyze this dataset: https://...")
 
 ## 🔧 Key Features
 
-- **🆓 Zero Cost**: No external API calls ever
+- **🆓 Zero Cost**: No LLM API costs ever (local inference only)
 - **⚡ Smart Routing**: Auto-routes tasks to optimal hardware
 - **🔄 Load Balancing**: HAProxy distributes load automatically
-- **📊 Monitoring**: Real-time health checks and recovery
+- **📊 Monitoring**: Real-time health checks + optional Langfuse/Helicone
 - **🛡️ Fault Tolerance**: Automatic failover and restart
 - **📈 Auto-scaling**: Dynamic model loading based on load
 
@@ -99,10 +100,10 @@ result = await data_workflow.invoke("Analyze this dataset: https://...")
 
 ```bash
 # Check cluster health
-curl http://192.168.1.104:8083/cluster_health
+curl http://192.168.1.137:8083/cluster_health
 
 # View load balancer stats
-open http://192.168.1.101:9000/haproxy_stats
+open http://192.168.1.81:9000/haproxy_stats
 
 # Monitor real-time performance
 htop  # On each machine
@@ -129,6 +130,17 @@ wget https://huggingface.co/.../model.bin
 ```python
 # Create new workflows in examples/
 # Follow the existing patterns for routing and tools
+```
+
+### Add Advanced Monitoring (Optional)
+```bash
+# Option 1: Langfuse (LangSmith alternative)
+./setup_guides/05_langfuse_setup.md
+
+# Option 2: Helicone (Alternative monitoring)
+./setup_guides/06_helicone_setup.md
+
+# Both are completely free and self-hosted!
 ```
 
 ## 🚨 Troubleshooting
