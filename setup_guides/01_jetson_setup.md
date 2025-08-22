@@ -33,14 +33,108 @@ sudo jetson_clocks  # Max CPU/GPU clocks
 
 # Verify CUDA installation
 nvidia-smi
+
+# Fix CUDA PATH if nvcc not found
+if ! command -v nvcc &> /dev/null; then
+    echo "⚠️ nvcc not found, setting up CUDA PATH..."
+    
+    # Find CUDA installation
+    if [ -d "/usr/local/cuda" ]; then
+        CUDA_PATH="/usr/local/cuda"
+    elif [ -d "/usr/local/cuda-12.6" ]; then
+        CUDA_PATH="/usr/local/cuda-12.6"
+    elif [ -d "/usr/local/cuda-12.2" ]; then
+        CUDA_PATH="/usr/local/cuda-12.2"
+    elif [ -d "/usr/local/cuda-11.4" ]; then
+        CUDA_PATH="/usr/local/cuda-11.4"
+    else
+        echo "❌ CUDA not found. Installing..."
+        sudo apt install -y cuda-toolkit-12-2
+        CUDA_PATH="/usr/local/cuda-12.2"
+    fi
+    
+    # Add CUDA to PATH
+    echo "export PATH=${CUDA_PATH}/bin:\$PATH" >> ~/.bashrc
+    echo "export LD_LIBRARY_PATH=${CUDA_PATH}/lib64:\$LD_LIBRARY_PATH" >> ~/.bashrc
+    echo "export CUDA_HOME=${CUDA_PATH}" >> ~/.bashrc
+    
+    # Create symlink if needed
+    if [ ! -L "/usr/local/cuda" ] && [ "$CUDA_PATH" != "/usr/local/cuda" ]; then
+        sudo ln -sf $CUDA_PATH /usr/local/cuda
+    fi
+    
+    # Reload environment
+    source ~/.bashrc
+    export PATH=${CUDA_PATH}/bin:$PATH
+    export LD_LIBRARY_PATH=${CUDA_PATH}/lib64:$LD_LIBRARY_PATH
+fi
+
+# Verify CUDA
 nvcc --version
+
+# If nvcc still not found, troubleshoot with these commands:
+if ! command -v nvcc &> /dev/null; then
+    echo "🔍 TROUBLESHOOTING: nvcc still not found"
+    echo "Check JetPack version:"
+    cat /etc/nv_tegra_release
+    echo "Check installed CUDA packages:"
+    dpkg -l | grep cuda
+    echo "Check available CUDA paths:"
+    ls -la /usr/local/cuda*
+    echo "Install build tools if missing:"
+    sudo apt install -y build-essential
+fi
+```
+
+### 🛠️ **Common CUDA Issues and Fixes**
+
+**Issue: `nvcc --version` returns "command not found"**
+
+This is very common on Jetson. CUDA is installed but PATH isn't configured.
+
+```bash
+# Diagnosis commands:
+ls -la /usr/local/ | grep cuda
+echo $PATH
+cat /etc/nv_tegra_release
+
+# Your system has CUDA 12.6 in /usr/local/cuda-12.6
+# The fix above should work, but if manual fix needed:
+echo 'export PATH=/usr/local/cuda-12.6/bin:$PATH' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=/usr/local/cuda-12.6/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+echo 'export CUDA_HOME=/usr/local/cuda-12.6' >> ~/.bashrc
+source ~/.bashrc
+nvcc --version
+```
+
+**Expected Output:**
+```
+nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2023 NVIDIA Corporation
+Cuda compilation tools, release 12.6, V12.6.xxx
+```
+
+**If CUDA completely missing:**
+```bash
+sudo apt update
+sudo apt install -y cuda-toolkit-12-2
+# Then add to PATH as above
 ```
 
 ## Step 2: Install Docker and NVIDIA Container Runtime
 
 ```bash
-# Install Docker
-sudo apt install -y docker.io
+# Fix common Docker conflicts on Jetson first
+sudo apt remove -y containerd docker docker-engine docker.io runc || true
+sudo apt autoremove -y
+sudo apt autoclean
+
+# Install Docker using official script (handles Jetson properly)
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+rm get-docker.sh
+
+# Configure Docker service
 sudo systemctl enable docker
 sudo systemctl start docker
 sudo usermod -aG docker $USER
@@ -69,6 +163,79 @@ sudo systemctl restart docker
 
 # Test NVIDIA Docker
 docker run --rm --gpus all nvidia/cuda:11.4-base-ubuntu20.04 nvidia-smi
+```
+
+### 🛠️ **Common Docker Issues and Fixes**
+
+**Issue: `containerd.io : Conflicts: containerd`**
+
+This is very common on Jetson. The fix above should prevent it, but if you still get this error:
+
+```bash
+# Root cause: Jetson has containerd pre-installed, conflicts with containerd.io
+
+# Complete fix:
+sudo apt remove -y containerd docker docker-engine docker.io runc || true
+sudo apt autoremove -y && sudo apt autoclean
+
+# Install Docker properly for Jetson:
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh && rm get-docker.sh
+
+sudo systemctl enable docker && sudo systemctl start docker
+sudo usermod -aG docker $USER
+```
+
+**Issue: Permission denied accessing Docker**
+```bash
+# You need to logout/login after adding to docker group, or:
+newgrp docker
+# Or start new shell:
+su - $USER
+```
+
+**Issue: Docker service won't start**
+```bash
+# Check what's wrong:
+sudo journalctl -u docker.service
+# Reset if needed:
+sudo systemctl stop docker
+sudo rm -rf /var/lib/docker
+sudo systemctl start docker
+```
+
+**Issue: NVIDIA runtime not found**
+```bash
+# Verify nvidia-container-runtime installed:
+dpkg -l | grep nvidia-container
+# If missing:
+sudo apt update && sudo apt install -y nvidia-container-runtime
+# Check runtime registered:
+docker info | grep nvidia
+```
+
+**Alternative: Snap installation (if above fails)**
+```bash
+sudo apt remove -y docker docker-engine docker.io containerd runc || true
+sudo snap install docker
+sudo usermod -aG docker $USER
+```
+
+**Expected Docker Output:**
+```bash
+$ docker --version
+Docker version 24.0.7, build afdd53b
+
+$ docker run hello-world
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+
+$ docker run --rm --gpus all nvidia/cuda:12.2-runtime-ubuntu20.04 nvidia-smi
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 540.4.0     Driver Version: 540.4.0      CUDA Version: 12.6     |
+|-------------------------------+----------------------+----------------------+
+|   0  Orin (nvgpu)           N/A| N/A              N/A |                  N/A |
++-------------------------------+----------------------+----------------------+
 ```
 
 ## Step 3: Install Ollama with Production Optimizations
