@@ -14,41 +14,60 @@ Your optimal setup uses your **available hardware** efficiently:
 
 ## 🚀 Quick Start
 
-### 1. Set Up Your Machines
+### 1. Set Up Your Machines (Modular Approach)
 
-Follow the setup guides in order:
+Follow the setup guides in order - each guide is self-contained and updated from the comprehensive SOT:
 
 ```bash
-# 1. Configure Jetson Orin Nano
-./setup_guides/01_jetson_setup.md
+# 1. Setup Jetson Orin Nano (Primary LLM Server)
+# Follow: setup_guides/01_jetson_setup.md
+# Sets up Ollama + TensorRT optimizations on jetson-node (192.168.1.177)
 
-# 2. Configure CPU machines
-./setup_guides/02_cpu_setup.md
+# 2. Setup CPU Coordinator (Heavy LLM + Load Balancer + Cache)  
+# Follow: setup_guides/02_cpu_setup.md
+# Sets up llama.cpp + HAProxy + Redis on cpu-node (192.168.1.81)
 
-# 3. Integrate with LangGraph
-./setup_guides/03_langgraph_integration.md
+# 3. Setup LangGraph Integration (Workflows + Routing)
+# Follow: setup_guides/03_langgraph_integration.md  
+# Creates intelligent routing and tool integration
 
-# 4. Set up distributed coordination
-./setup_guides/04_distributed_coordination.md
+# 4. Setup Worker Nodes (Embeddings + Tools + Monitoring)
+# Follow: setup_guides/04_distributed_coordination.md
+# Sets up rp-node, worker-node3, worker-node4 + orchestration
 ```
 
 ### 2. Start Your Cluster
 
 ```bash
-# Update IPs in config files first!
-python cluster_orchestrator.py start
+# All IPs are pre-configured for your actual nodes!
+cd ~/ai-infrastructure/langgraph-config
+source ~/langgraph-env/bin/activate
 
-# Check everything is running
-python cluster_orchestrator.py status
+# Start entire cluster
+python3 cluster_orchestrator.py start
+
+# Check cluster status  
+python3 cluster_orchestrator.py status
+
+# Test all services
+python3 cluster_orchestrator.py test
 ```
 
 ### 3. Test Your Setup
 
 ```bash
+# Test LangGraph workflows
+cd ~/ai-infrastructure/langgraph-config
+python3 main_app.py
+
 # Run example workflows
-cd examples/
-python example_workflows.py
+cd /home/sanzad/git/langgraph/examples/
+python3 example_workflows.py
 ```
+
+### 🎯 **Single Source of Truth**
+- **Complete Guide**: [00_complete_deployment_guide.md](setup_guides/00_complete_deployment_guide.md) - Full walkthrough with all commands
+- **Modular Guides**: 01-04 are extracted and synchronized from the complete guide
 
 ## 📊 Performance Expectations
 
@@ -134,14 +153,32 @@ wget https://huggingface.co/.../model.bin
 
 ### Add Advanced Monitoring (Optional)
 ```bash
-# Option 1: Langfuse (LangSmith alternative)
-./setup_guides/05_langfuse_setup.md
+# Option 1: Langfuse (LangSmith alternative) - Advanced tracing & analytics
+# Follow: setup_guides/05_langfuse_setup.md
 
-# Option 2: Helicone (Alternative monitoring)
-./setup_guides/06_helicone_setup.md
+# Option 2: Helicone (Alternative monitoring) - Real-time monitoring & debugging  
+# Follow: setup_guides/06_helicone_setup.md
 
 # Both are completely free and self-hosted!
 ```
+
+## 📁 **Setup Guide Structure**
+
+| Guide | Purpose | Machine(s) | Status |
+|-------|---------|------------|--------|
+| **00_complete_deployment_guide.md** | 🎯 **Master SOT** - Complete walkthrough | All machines | ✅ Production ready |
+| **01_jetson_setup.md** | Jetson Orin Nano setup | jetson-node | ✅ Synced from SOT |
+| **02_cpu_setup.md** | CPU coordinator setup | cpu-node | ✅ Synced from SOT |
+| **03_langgraph_integration.md** | LangGraph workflows | cpu-node | ✅ Synced from SOT |
+| **04_distributed_coordination.md** | Worker nodes + orchestration | All workers | ✅ Synced from SOT |
+| **05_langfuse_setup.md** | Optional: Advanced monitoring | cpu-node | ✅ Optional feature |
+| **06_helicone_setup.md** | Optional: Alternative monitoring | cpu-node | ✅ Optional feature |
+
+**Benefits of this structure:**
+- ✅ **Modular**: Focus on one machine/service at a time
+- ✅ **Updated**: All guides synced from the comprehensive SOT
+- ✅ **Flexible**: Use individual guides or complete guide
+- ✅ **Maintained**: Single source of truth prevents sync issues
 
 ## 🚨 Troubleshooting
 
