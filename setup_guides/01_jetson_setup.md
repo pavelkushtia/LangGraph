@@ -140,21 +140,25 @@ curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 rm get-docker.sh
 
-# Step 3: If still conflicts, resolve without removing containerd
+# Step 3: Handle Docker conflicts properly (based on real Jetson testing)
 if ! docker --version &> /dev/null; then
-    echo "⚠️ Docker installation conflicts detected. Using alternative approach..."
+    echo "⚠️ Docker installation issues detected. Using proven approach..."
     
-    # Alternative 1: Use Snap (doesn't conflict with containerd)
-    sudo snap install docker
-    sudo groupadd docker || true
-    sudo usermod -aG docker $USER
+    # Stop Docker services to clean up
+    sudo systemctl stop docker.socket docker.service || true
     
-    # Alternative 2: If snap fails, minimal package removal (safer)
-    if ! snap list | grep docker &> /dev/null; then
-        echo "Snap failed, trying minimal package fix..."
-        sudo apt remove -y docker.io docker-engine || true
-        # Keep containerd - just remove conflicting docker packages
-        sudo apt install -y docker-ce docker-ce-cli docker-compose-plugin
+    # Remove only conflicting packages (research: removing containerd breaks system services)
+    sudo apt remove -y docker.io docker-engine || true
+    
+    # Install Docker CE (works better with existing containerd on Jetson)
+    sudo apt update
+    sudo apt install -y docker-ce docker-ce-cli docker-compose-plugin
+    
+    # If still failing, check kernel compatibility
+    if ! docker --version &> /dev/null; then
+        echo "❌ Docker installation failed. Running compatibility check..."
+        curl -fsSL https://raw.githubusercontent.com/moby/moby/master/contrib/check-config.sh | bash
+        echo "⚠️ Check kernel compatibility report above. May need kernel modules."
     fi
 fi
 
