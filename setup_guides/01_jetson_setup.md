@@ -192,11 +192,20 @@ sudo systemctl restart docker
 # Test NVIDIA Docker with ARM64-compatible images
 # NOTE: Standard nvidia/cuda images are x86_64 only - use ARM64/Jetson-specific images
 
-# Test GPU access (choose one that works)
-docker run --rm --gpus all mdegans/l4t-base:latest nvidia-smi
-# OR try: docker run --rm --gpus all dustynv/l4t-ml:r36.2.0 nvidia-smi
+# Test GPU access with L4T version-matched containers
+# IMPORTANT: Container L4T version should match your Jetson's L4T version
 
-# If above fail, manual test with Ubuntu ARM64
+# Check your L4T version first
+cat /etc/nv_tegra_release
+# Example output: R36 (release), REVISION: 4.4 = Use r36.x containers
+
+# Test with version-matched container (replace r36.2.0 with your version)
+docker run --rm --gpus all dustynv/l4t-ml:r36.2.0 nvidia-smi
+
+# Alternative: Lightweight base (may have older L4T)
+docker run --rm --gpus all mdegans/l4t-base:latest ls -la /dev/nvidia*
+
+# If version mismatch, try manual install in ARM64 Ubuntu
 docker run --rm --gpus all arm64v8/ubuntu:22.04 bash -c "apt update && apt install -y nvidia-utils-535 && nvidia-smi"
 ```
 
@@ -295,12 +304,35 @@ Standard nvidia/cuda images are **x86_64 only** - Jetson needs ARM64 images.
 # Check your architecture
 uname -m  # Should show: aarch64
 
-# Use Jetson-specific containers instead
-docker run --rm --gpus all mdegans/l4t-base:latest nvidia-smi
+# Check your L4T version for correct container tags
+cat /etc/nv_tegra_release
+# R36.x.x = JetPack 6.x → use dustynv/l4t-*:r36.*
+# R35.x.x = JetPack 5.x → use dustynv/l4t-*:r35.*
+# R32.x.x = JetPack 4.x → use dustynv/l4t-*:r32.*
+
+# Use version-matched containers
+docker run --rm --gpus all dustynv/l4t-ml:r36.2.0 nvidia-smi  # For R36.x
+docker run --rm --gpus all dustynv/l4t-ml:r35.3.1 nvidia-smi  # For R35.x
+```
+
+**Issue: `Unable to locate package nvidia-utils` (L4T version mismatch)**
+
+Container L4T version doesn't match your Jetson's L4T version.
+
+```bash
+# Check container vs Jetson L4T versions
+cat /etc/nv_tegra_release  # Your Jetson version
+docker run --rm dustynv/l4t-ml:r36.2.0 cat /etc/nv_tegra_release  # Container version
+
+# Solution 1: Use matching L4T version container
+# For L4T R36.x (JetPack 6.x):
 docker run --rm --gpus all dustynv/l4t-ml:r36.2.0 nvidia-smi
 
-# Check your L4T version for correct tags
-cat /etc/nv_tegra_release
+# Solution 2: Check GPU devices directly (works regardless of L4T version)
+docker run --rm --gpus all mdegans/l4t-base:latest ls -la /dev/nvidia*
+
+# Solution 3: Search available containers
+docker search dustynv/l4t  # Find containers matching your L4T version
 ```
 
 **Issue: `docker: Cannot connect to the Docker daemon` (with socket activation)**

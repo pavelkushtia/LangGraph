@@ -189,13 +189,22 @@ EOF
 sudo systemctl restart docker
 
 # Test NVIDIA Docker with ARM64-compatible images
-# IMPORTANT: Standard nvidia/cuda images are x86_64 only - Jetson needs ARM64 images
+# CRITICAL: Container L4T version must match your Jetson's L4T version
 
-# Test GPU access (choose one that works for your L4T version)
-docker run --rm --gpus all mdegans/l4t-base:latest nvidia-smi
-# OR: docker run --rm --gpus all dustynv/l4t-ml:r36.2.0 nvidia-smi
+# Step 1: Check your L4T version for container selection
+cat /etc/nv_tegra_release
+# Example: R36 (release), REVISION: 4.4 = Use r36.x containers
 
-# If above fail, manual test with Ubuntu ARM64 + NVIDIA utils
+# Step 2: Test with version-matched container
+# For L4T R36.x (JetPack 6.x):
+docker run --rm --gpus all dustynv/l4t-ml:r36.2.0 nvidia-smi
+# For L4T R35.x (JetPack 5.x):
+# docker run --rm --gpus all dustynv/l4t-ml:r35.3.1 nvidia-smi
+
+# Step 3: Alternative lightweight test (may have L4T version mismatch)
+docker run --rm --gpus all mdegans/l4t-base:latest ls -la /dev/nvidia*
+
+# Step 4: Fallback with manual install in current Ubuntu
 docker run --rm --gpus all arm64v8/ubuntu:22.04 bash -c "apt update && apt install -y nvidia-utils-535 && nvidia-smi"
 ```
 
@@ -283,11 +292,35 @@ docker system info | grep Architecture  # Should show: aarch64
 
 # Check your L4T version for correct container tags
 cat /etc/nv_tegra_release
+# R36.x.x = JetPack 6.x → use dustynv/l4t-*:r36.*
+# R35.x.x = JetPack 5.x → use dustynv/l4t-*:r35.*
+# R32.x.x = JetPack 4.x → use dustynv/l4t-*:r32.*
 
-# Use Jetson-specific ARM64 containers
-docker run --rm --gpus all mdegans/l4t-base:latest nvidia-smi
+# Use version-matched Jetson containers
+docker run --rm --gpus all dustynv/l4t-ml:r36.2.0 nvidia-smi  # For R36.x
+docker run --rm --gpus all dustynv/l4t-ml:r35.3.1 nvidia-smi  # For R35.x
+docker search dustynv/l4t  # Find containers for your L4T version
+```
+
+**Issue: `Unable to locate package nvidia-utils` (L4T version mismatch)**
+
+**Root cause**: Container has different L4T version than your Jetson.
+
+```bash
+# Diagnose version mismatch
+cat /etc/nv_tegra_release  # Your Jetson's L4T version
+docker run --rm dustynv/l4t-ml:r36.2.0 cat /etc/nv_tegra_release  # Container's L4T
+
+# Solution: Use matching L4T version container
+# For L4T R36.x (JetPack 6.x) - your system:
 docker run --rm --gpus all dustynv/l4t-ml:r36.2.0 nvidia-smi
-docker search l4t  # Find more options
+
+# Alternative: Verify GPU access without nvidia-smi
+docker run --rm --gpus all mdegans/l4t-base:latest ls -la /dev/nvidia*
+# Should show: /dev/nvidia0, /dev/nvidiactl, etc.
+
+# Search for containers matching your L4T
+docker search dustynv  # Look for l4t-ml:rXX.X tags matching your version
 ```
 
 **Issue: `docker: Cannot connect to daemon` (socket activation)**
@@ -334,22 +367,37 @@ sudo systemctl enable docker && sudo systemctl start docker
 For our LangGraph architecture, choose containers based on your role:
 
 **For LLM Inference (jetson-node):**
+
+First, check your L4T version:
 ```bash
-# Lightweight base for Ollama installation
-docker run --rm --gpus all mdegans/l4t-base:latest nvidia-smi
-# OR more feature-rich ML environment  
+cat /etc/nv_tegra_release
+# R36.4.4 = JetPack 6.x → use r36.x containers
+```
+
+Choose container based on your L4T version:
+```bash
+# For L4T R36.x (JetPack 6.x) - your system:
 docker run --rm --gpus all dustynv/l4t-ml:r36.2.0 nvidia-smi
+
+# For L4T R35.x (JetPack 5.x):
+docker run --rm --gpus all dustynv/l4t-ml:r35.3.1 nvidia-smi
+
+# Lightweight base (may have version mismatch - use for device testing):
+docker run --rm --gpus all mdegans/l4t-base:latest ls -la /dev/nvidia*
 ```
 
 **For Development/Testing:**
 ```bash
-# Check available Jetson containers
-docker search dustynv
-docker search l4t
+# Find containers matching your L4T version
+docker search dustynv/l4t
+# Look for tags like: r36.2.0, r35.3.1, r32.7.1
 
-# Popular choices by L4T version:
-# L4T R36.x (JetPack 6.x): dustynv/l4t-ml:r36.2.0
+# Container selection by L4T/JetPack version:
+# L4T R36.x (JetPack 6.x): dustynv/l4t-ml:r36.2.0 ← Your system
 # L4T R35.x (JetPack 5.x): dustynv/l4t-ml:r35.3.1
+# L4T R32.x (JetPack 4.x): dustynv/l4t-ml:r32.7.1
+
+# CRITICAL: Version mismatch causes "package not found" errors
 ```
 
 ### Step 1.3: Install Ollama with Optimizations
