@@ -124,15 +124,37 @@ Cuda compilation tools, release 12.6, V12.6.xxx
 ### Step 1.2: Install Docker and NVIDIA Container Runtime
 
 ```bash
-# Fix common Docker conflicts on Jetson first  
-sudo apt remove -y containerd docker docker-engine docker.io runc || true
-sudo apt autoremove -y
-sudo apt autoclean
+# SAFER Docker installation for Jetson (research shows removing containerd breaks services)
 
-# Install Docker using official script (handles Jetson properly)
+# First, try normal installation
+sudo apt update
+
+# If containerd.io conflicts occur, use safer approach:
+# Step 1: Stop services temporarily (don't remove containerd!)
+sudo systemctl stop containerd || true
+sudo systemctl stop docker || true
+
+# Step 2: Install Docker using official script
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 rm get-docker.sh
+
+# Step 3: If conflicts persist, use alternative approaches
+if ! docker --version &> /dev/null; then
+    echo "⚠️ Docker conflicts detected. Trying Snap installation (safer)..."
+    
+    # Snap doesn't conflict with containerd
+    sudo snap install docker
+    sudo groupadd docker || true
+    sudo usermod -aG docker $USER
+    
+    # If snap fails, minimal package removal (keep containerd!)
+    if ! snap list | grep docker &> /dev/null; then
+        echo "Using minimal package fix..."
+        sudo apt remove -y docker.io docker-engine || true
+        sudo apt install -y docker-ce docker-ce-cli docker-compose-plugin
+    fi
+fi
 
 # Configure Docker service
 sudo systemctl enable docker
@@ -169,18 +191,30 @@ docker run --rm --gpus all nvidia/cuda:11.4-base-ubuntu20.04 nvidia-smi
 
 **Issue: `containerd.io : Conflicts: containerd`**
 
-Very common on Jetson - containerd pre-installed conflicts with containerd.io.
+Very common on Jetson. **CRITICAL**: Do NOT remove containerd - research shows it breaks system services!
 
 ```bash
-# Complete fix:
-sudo apt remove -y containerd docker docker-engine docker.io runc || true
-sudo apt autoremove -y && sudo apt autoclean
+# Root cause: Jetson has containerd pre-installed, conflicts with containerd.io
+# SAFER solutions (preserve containerd):
 
-# Install Docker properly for Jetson:
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh && rm get-docker.sh
-sudo systemctl enable docker && sudo systemctl start docker
+# Option 1: Snap installation (recommended - no conflicts)
+sudo snap install docker
+sudo groupadd docker || true
 sudo usermod -aG docker $USER
+
+# Activate Docker group (avoid newgrp password prompt):
+echo "💡 TIP: Exit and reconnect SSH to activate Docker group: exit; ssh sanzad@192.168.1.177"
+# Or start fresh shell: sudo su - $USER
+
+# Option 2: Minimal package removal (safer than full removal)
+sudo systemctl stop docker containerd || true
+sudo apt remove -y docker.io docker-engine || true  # Keep containerd!
+sudo apt install -y docker-ce docker-ce-cli docker-compose-plugin
+sudo systemctl start containerd docker
+
+# Option 3: Version pinning (if specific versions work)
+sudo apt-mark hold containerd
+sudo apt install -y docker-ce=<specific-version>
 ```
 
 **Issue: Permission denied accessing Docker**
