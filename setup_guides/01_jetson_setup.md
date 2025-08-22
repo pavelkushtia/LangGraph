@@ -185,8 +185,15 @@ EOF
 
 sudo systemctl restart docker
 
-# Test NVIDIA Docker
-docker run --rm --gpus all nvidia/cuda:11.4-base-ubuntu20.04 nvidia-smi
+# Test NVIDIA Docker with ARM64-compatible images
+# NOTE: Standard nvidia/cuda images are x86_64 only - use ARM64/Jetson-specific images
+
+# Test GPU access (choose one that works)
+docker run --rm --gpus all mdegans/l4t-base:latest nvidia-smi
+# OR try: docker run --rm --gpus all dustynv/l4t-ml:r36.2.0 nvidia-smi
+
+# If above fail, manual test with Ubuntu ARM64
+docker run --rm --gpus all arm64v8/ubuntu:22.04 bash -c "apt update && apt install -y nvidia-utils-535 && nvidia-smi"
 ```
 
 ### 🛠️ **Common Docker Issues and Fixes**
@@ -263,18 +270,53 @@ sudo usermod -aG docker $USER
 **Expected Docker Output:**
 ```bash
 $ docker --version
-Docker version 24.0.7, build afdd53b
+Docker version 28.3.3, build 980b856
 
 $ docker run hello-world
 Hello from Docker!
 This message shows that your installation appears to be working correctly.
 
-$ docker run --rm --gpus all nvidia/cuda:12.2-runtime-ubuntu20.04 nvidia-smi
+$ docker run --rm --gpus all mdegans/l4t-base:latest nvidia-smi
 +-----------------------------------------------------------------------------+
 | NVIDIA-SMI 540.4.0     Driver Version: 540.4.0      CUDA Version: 12.6     |
-|-------------------------------+----------------------+----------------------+
 |   0  Orin (nvgpu)           N/A| N/A              N/A |                  N/A |
-+-------------------------------+----------------------+----------------------+
++-----------------------------------------------------------------------------+
+```
+
+**Issue: `manifest for nvidia/cuda:X.X not found`**
+
+Standard nvidia/cuda images are **x86_64 only** - Jetson needs ARM64 images.
+
+```bash
+# Check your architecture
+uname -m  # Should show: aarch64
+
+# Use Jetson-specific containers instead
+docker run --rm --gpus all mdegans/l4t-base:latest nvidia-smi
+docker run --rm --gpus all dustynv/l4t-ml:r36.2.0 nvidia-smi
+
+# Check your L4T version for correct tags
+cat /etc/nv_tegra_release
+```
+
+**Issue: `docker: Cannot connect to the Docker daemon` (with socket activation)**
+
+```bash
+# If socket activation causes issues, disable it
+sudo systemctl stop docker.socket docker.service
+sudo systemctl disable docker.socket
+sudo systemctl start docker.service
+sudo systemctl status docker.service
+```
+
+**Issue: `docker --version` works but `docker run` fails**
+
+```bash
+# Stale socket file issue - clean up and restart
+sudo systemctl stop docker
+sudo rm -f /var/run/docker.sock /run/docker.sock
+sudo systemctl start docker
+docker run hello-world
 ```
 
 ## Step 3: Install Ollama with Production Optimizations

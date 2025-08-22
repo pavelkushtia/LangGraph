@@ -183,8 +183,15 @@ EOF
 
 sudo systemctl restart docker
 
-# Test NVIDIA Docker
-docker run --rm --gpus all nvidia/cuda:11.4-base-ubuntu20.04 nvidia-smi
+# Test NVIDIA Docker with ARM64-compatible images
+# IMPORTANT: Standard nvidia/cuda images are x86_64 only - Jetson needs ARM64 images
+
+# Test GPU access (choose one that works for your L4T version)
+docker run --rm --gpus all mdegans/l4t-base:latest nvidia-smi
+# OR: docker run --rm --gpus all dustynv/l4t-ml:r36.2.0 nvidia-smi
+
+# If above fail, manual test with Ubuntu ARM64 + NVIDIA utils
+docker run --rm --gpus all arm64v8/ubuntu:22.04 bash -c "apt update && apt install -y nvidia-utils-535 && nvidia-smi"
 ```
 
 #### 🛠️ **Docker Troubleshooting**
@@ -246,14 +253,98 @@ sudo snap install docker && sudo usermod -aG docker $USER
 
 **Expected Docker Output:**
 ```bash
-$ docker --version
-Docker version 24.0.7, build afdd53b
+$ docker --version  
+Docker version 28.3.3, build 980b856
 
-$ docker run --rm --gpus all nvidia/cuda:12.2-runtime-ubuntu20.04 nvidia-smi
+$ docker run hello-world
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+
+$ docker run --rm --gpus all mdegans/l4t-base:latest nvidia-smi
 +-----------------------------------------------------------------------------+
 | NVIDIA-SMI 540.4.0     Driver Version: 540.4.0      CUDA Version: 12.6     |
 |   0  Orin (nvgpu)           N/A| N/A              N/A |                  N/A |
 +-----------------------------------------------------------------------------+
+```
+
+**Issue: `manifest for nvidia/cuda:X.X not found`**
+
+**Root cause**: Standard nvidia/cuda images are **x86_64 only** - Jetson uses ARM64.
+
+```bash
+# Verify architecture
+uname -m  # Should show: aarch64
+docker system info | grep Architecture  # Should show: aarch64
+
+# Check your L4T version for correct container tags
+cat /etc/nv_tegra_release
+
+# Use Jetson-specific ARM64 containers
+docker run --rm --gpus all mdegans/l4t-base:latest nvidia-smi
+docker run --rm --gpus all dustynv/l4t-ml:r36.2.0 nvidia-smi
+docker search l4t  # Find more options
+```
+
+**Issue: `docker: Cannot connect to daemon` (socket activation)**
+
+**Root cause**: Docker socket activation can cause timing/permission issues.
+
+```bash
+# Disable socket activation, use direct service
+sudo systemctl stop docker.socket docker.service
+sudo systemctl disable docker.socket
+sudo systemctl start docker.service
+sudo systemctl status docker.service
+docker run hello-world
+```
+
+**Issue: `docker --version` works but `docker run` fails**
+
+**Root cause**: Stale socket files from previous daemon instances.
+
+```bash
+# Clean stale sockets and restart fresh
+sudo systemctl stop docker
+sudo rm -f /var/run/docker.sock /run/docker.sock
+sudo systemctl start docker
+docker run hello-world
+```
+
+**Issue: Docker daemon kernel/networking errors**
+
+**Root cause**: Missing kernel modules (common with Snap Docker).
+
+```bash
+# Check kernel compatibility
+curl -fsSL https://raw.githubusercontent.com/moby/moby/master/contrib/check-config.sh | bash
+
+# If issues with Snap Docker, remove and use regular Docker
+sudo snap remove docker
+curl -fsSL https://get.docker.com | sh
+sudo systemctl enable docker && sudo systemctl start docker
+```
+
+#### 🎯 **Container Selection for LangGraph Setup**
+
+For our LangGraph architecture, choose containers based on your role:
+
+**For LLM Inference (jetson-node):**
+```bash
+# Lightweight base for Ollama installation
+docker run --rm --gpus all mdegans/l4t-base:latest nvidia-smi
+# OR more feature-rich ML environment  
+docker run --rm --gpus all dustynv/l4t-ml:r36.2.0 nvidia-smi
+```
+
+**For Development/Testing:**
+```bash
+# Check available Jetson containers
+docker search dustynv
+docker search l4t
+
+# Popular choices by L4T version:
+# L4T R36.x (JetPack 6.x): dustynv/l4t-ml:r36.2.0
+# L4T R35.x (JetPack 5.x): dustynv/l4t-ml:r35.3.1
 ```
 
 ### Step 1.3: Install Ollama with Optimizations
