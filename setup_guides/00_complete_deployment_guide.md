@@ -911,11 +911,12 @@ backend llm_servers
     balance roundrobin
     option httpchk GET /api/tags
     
-    # Primary: Jetson Ollama (small/efficient models, higher weight)
+    # Load balanced backends (round-robin with weights)
+    # Jetson Ollama: Small/efficient models, faster responses (67% of requests)
     server jetson 192.168.1.177:11434 check weight 10 inter 30s fall 3 rise 2
     
-    # Secondary: CPU Ollama (large models, backup) - using built-in service
-    server cpu_ollama 127.0.0.1:11435 check weight 5 backup inter 30s fall 3 rise 2
+    # CPU Ollama: Large models, more compute power (33% of requests)
+    server cpu_ollama 127.0.0.1:11435 check weight 5 inter 30s fall 3 rise 2
 
 # Tools Load Balancer
 frontend tools_frontend
@@ -958,8 +959,29 @@ sudo haproxy -f /etc/haproxy/haproxy.cfg -c
 sudo systemctl enable haproxy
 sudo systemctl start haproxy
 
+# 📋 Load Balancing Behavior:
+# • Jetson (weight 10): ~67% of requests - handles fast/small models
+# • CPU (weight 5): ~33% of requests - handles large models
+# • Round-robin distribution based on weights
+# • Both backends are active (no backup/failover)
+
 # Check status
 sudo systemctl status haproxy
+
+# 🧪 Test load balancing distribution
+echo "Testing load balancer - you should see alternating between Jetson and CPU models:"
+for i in {1..6}; do 
+    echo "Request $i:"
+    response=$(curl -s http://localhost:9000/api/tags)
+    if echo "$response" | grep -q "mistral:7b"; then
+        echo "  ✅ Routed to CPU backend (mistral:7b)"
+    elif echo "$response" | grep -q "llama3.2"; then
+        echo "  ✅ Routed to Jetson backend (llama3.2 models)"
+    else
+        echo "  ❓ Unknown response"
+    fi
+    sleep 1
+done
 
 # Configure firewall
 sudo ufw allow 9000/tcp  # LLM load balancer
