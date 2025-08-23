@@ -832,7 +832,7 @@ ollama run mistral:7b "What are you running on?"
 
 # Service is already running via built-in ollama.service
 # Check that it's working on the right port
-curl -X POST http://localhost:11435/api/tags || echo "⚠️ Service not ready yet, wait a moment"
+curl http://localhost:11435/api/tags || echo "⚠️ Service not ready yet, wait a moment"
 
 # Test remote access from jetson
 echo "✅ Test from jetson-node:"
@@ -1770,7 +1770,14 @@ sudo apt update && sudo apt upgrade -y
 
 # Install monitoring tools
 sudo apt install -y curl wget git htop iotop nano vim python3 python3-pip python3-venv
-sudo apt install -y prometheus grafana-server  # Optional: Advanced monitoring
+
+# Setup Grafana repository (required before installation)
+wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
+echo "deb https://packages.grafana.com/oss/deb stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
+sudo apt update
+
+# Install advanced monitoring tools (optional)
+sudo apt install -y prometheus grafana  # Note: package is "grafana", not "grafana-server"
 
 # Create monitoring environment
 python3 -m venv ~/monitoring-env

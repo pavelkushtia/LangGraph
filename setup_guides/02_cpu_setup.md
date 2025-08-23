@@ -86,7 +86,7 @@ ollama run mistral:7b "What are you running on?"
 
 # Service is already running via built-in ollama.service
 # Check that it's working on the right port
-curl -X POST http://localhost:11435/api/tags || echo "⚠️ Service not ready yet, wait a moment"
+curl http://localhost:11435/api/tags || echo "⚠️ Service not ready yet, wait a moment"
 
 # Test remote access from jetson
 echo "✅ Test from jetson-node:"
