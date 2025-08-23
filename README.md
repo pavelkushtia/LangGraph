@@ -78,6 +78,12 @@ python3 example_workflows.py
 | cpu-node | Llama 13B Q4 | ~8GB | 5-10 tok/s | Complex analysis |
 | rp-node | Embeddings | ~2GB | 50+ emb/s | Vector search (ARM) |
 
+## 📚 Documentation
+
+- **[LangGraph Concepts & Workflows](docs/langgraph_concepts_and_workflows.md)** - How LangGraph orchestrates your distributed setup ⭐
+- **[Architecture Diagrams](docs/architecture_diagrams.md)** - System diagrams and visual flow charts
+- **[Example Workflows](examples/example_workflows.py)** - Complete LangGraph workflow implementations
+
 ## 🎯 Example Workflows
 
 ### Research Assistant
