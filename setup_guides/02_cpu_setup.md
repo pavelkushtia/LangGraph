@@ -33,16 +33,25 @@ sudo apt install -y curl wget git htop iotop nano vim \
 # Install Ollama (same as jetson-node - consistent!)
 curl -fsSL https://ollama.com/install.sh | sh
 
-# Configure Ollama for network access on different port
-export OLLAMA_HOST=0.0.0.0:11435
-echo 'export OLLAMA_HOST=0.0.0.0:11435' >> ~/.bashrc
-source ~/.bashrc
+# Configure Ollama service for network access on different port (same approach as jetson)
+sudo mkdir -p /etc/systemd/system/ollama.service.d
+sudo tee /etc/systemd/system/ollama.service.d/override.conf << EOF
+[Service]
+Environment="OLLAMA_HOST=0.0.0.0:11435"
+Environment="OLLAMA_MAX_LOADED_MODELS=2"
+Environment="OLLAMA_FLASH_ATTENTION=1"
+EOF
 
-# Start Ollama service
-ollama serve &
+# Reload systemd and enable Ollama service
+sudo systemctl daemon-reload
+sudo systemctl enable ollama
+sudo systemctl start ollama
 
 # Wait for service to start
-sleep 5
+sleep 10
+
+# Check service status
+sudo systemctl status ollama --no-pager
 
 # Pull large models that leverage 32GB RAM
 echo "📥 Starting with the best 7B model for learning..."
@@ -75,32 +84,9 @@ curl -X POST http://localhost:11435/api/generate \
 # Test interactive chat
 ollama run mistral:7b "What are you running on?"
 
-# Create systemd service for Ollama (persistent service)
-sudo tee /etc/systemd/system/ollama-cpu.service << EOF
-[Unit]
-Description=Ollama CPU Server
-After=network.target
-
-[Service]
-Type=simple
-User=$USER
-Environment=OLLAMA_HOST=0.0.0.0:11435
-ExecStart=/usr/local/bin/ollama serve
-Restart=always
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Enable and start Ollama service
-sudo systemctl enable ollama-cpu
-sudo systemctl start ollama-cpu
-
-# Check status
-sudo systemctl status ollama-cpu
+# Service is already running via built-in ollama.service
+# Check that it's working on the right port
+curl -X POST http://localhost:11435/api/tags || echo "⚠️ Service not ready yet, wait a moment"
 
 # Test remote access from jetson
 echo "✅ Test from jetson-node:"
@@ -182,7 +168,7 @@ backend llm_servers
     # Primary: Jetson Ollama (fast responses, higher weight)
     server jetson 192.168.1.177:11434 check weight 10 inter 30s fall 3 rise 2
     
-    # Secondary: CPU Ollama (large models, backup)  
+    # Secondary: CPU Ollama (large models, backup) - using built-in service
     server cpu_ollama 127.0.0.1:11435 check weight 5 backup inter 30s fall 3 rise 2
 
 # Tools Load Balancer
