@@ -2,7 +2,12 @@
 
 ## Overview
 
-This guide provides **step-by-step commands** to deploy your revised LangGraph architecture across your available machines with production-grade optimizations.
+This guide provides **step-by-step commands** to deploy your revised LangGraph architecture across your available machines.
+
+**🎯 SIMPLIFIED FOR LEARNING**: For learning LangGraph, you can **skip Docker entirely** and run **native Ollama** on jetson-node. This guide includes both approaches.
+
+**Native Approach**: Ollama directly installed → simpler, better performance  
+**Docker Approach**: Containerized services → complex, production-style
 
 ### **Target Architecture**
 
@@ -15,6 +20,70 @@ This guide provides **step-by-step commands** to deploy your revised LangGraph a
 | **Monitoring** | worker-node4 | 192.168.1.137 | 6GB | Intel i5 VM | Health checks, alerts |
 
 ---
+
+## 🎯 SIMPLE 2-OLLAMA ARCHITECTURE (Perfect for Learning LangGraph)
+
+**Simplified design using Ollama on BOTH machines - much easier for learning!**
+
+### The Architecture Logic:
+- **jetson-node (8GB)**: Ollama → Small/efficient models (2-7B parameters)
+- **cpu-node (32GB)**: Ollama → Large models (7-13B parameters) 
+- **HAProxy**: Load balances requests between both Ollama endpoints
+
+### Why This Simplified Design is PERFECT for Learning:
+1. **Consistent Interface**: Same Ollama API on both machines - no complexity
+2. **Easy Model Management**: `ollama pull/list/run` works the same everywhere
+3. **Automatic GPU Detection**: Ollama handles CUDA on Jetson, CPU on Intel automatically
+4. **High Availability**: If one server fails, the other takes over
+5. **Focus on LangGraph**: Spend time learning workflows, not LLM optimization
+
+### Quick Start - 2 Machines Setup:
+
+#### Machine 1: jetson-node (192.168.1.177) - Small/Efficient Models
+```bash
+# SSH to Jetson  
+ssh sanzad@192.168.1.177
+
+# Install Ollama (already done)
+# Configure for network access (already done)
+# Pull small efficient models optimized for 8GB
+ollama pull gemma2:2b        # 2B parameters - very fast
+ollama pull phi3:mini        # 3.8B parameters - efficient
+ollama pull llama3.2:3b      # 3B parameters - good quality
+```
+
+#### Machine 2: cpu-node (192.168.1.81) - Large Models + Coordinator
+```bash
+# SSH to CPU machine
+ssh sanzad@192.168.1.81
+
+# Install Ollama (same as Jetson - consistent!)
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Configure for network access
+export OLLAMA_HOST=0.0.0.0:11435  # Different port to avoid conflict
+echo 'export OLLAMA_HOST=0.0.0.0:11435' >> ~/.bashrc
+source ~/.bashrc
+
+# Start Ollama service on custom port
+ollama serve &
+
+# Pull large models that leverage 32GB RAM
+ollama pull llama2:7b-chat   # 7B parameters - good for complex tasks
+ollama pull mistral:7b       # 7B parameters - excellent reasoning
+ollama pull codellama:7b     # 7B parameters - coding tasks
+
+# Install LangGraph for orchestration
+pip install langgraph langchain-ollama
+```
+
+**🔥 RESULT**: Two powerful Ollama endpoints with different model sizes - simple and effective!
+
+---
+
+## 🏗️ Detailed Setup Steps (Required for Full Architecture)
+
+**The sections below provide detailed step-by-step commands for implementing the 2-LLM architecture above.**
 
 ## 🚀 Phase 1: jetson-node Setup (Primary LLM Server)
 
@@ -121,7 +190,20 @@ Copyright (c) 2005-2023 NVIDIA Corporation
 Cuda compilation tools, release 12.6, V12.6.xxx
 ```
 
-### Step 1.2: Install Docker and NVIDIA Container Runtime
+### Step 1.2: Install Docker and NVIDIA Container Runtime (OPTIONAL - Skip for Learning)
+
+**⚠️ IMPORTANT**: This Docker section is **OPTIONAL** and adds unnecessary complexity for learning setups.
+
+**🎯 RECOMMENDED**: Skip Docker entirely and run Ollama **natively** for:
+- Learning LangGraph
+- Single-user development  
+- Simpler configuration
+- Better performance on Jetson
+
+**Only use Docker if you need**:
+- Multiple isolated LLM services
+- Production deployment
+- Complex orchestration
 
 ```bash
 # SAFER Docker installation for Jetson (research shows removing containerd breaks services)
@@ -673,7 +755,7 @@ echo "🌐 Ollama API available at: http://192.168.1.177:11434"
 
 ---
 
-## 🧠 Phase 2: cpu-node Setup (Coordinator + Heavy LLM + HAProxy + Redis)
+## 🧠 Phase 2: cpu-node Setup (Coordinator + Ollama Large Models + HAProxy + Redis)
 
 **Machine**: cpu-node (192.168.1.81) - 32GB Intel i5-6500T
 
@@ -687,102 +769,69 @@ echo "🌐 Ollama API available at: http://192.168.1.177:11434"
 sudo apt update && sudo apt upgrade -y
 
 # Install essential packages
-sudo apt install -y curl wget git htop iotop nano vim build-essential cmake \
+sudo apt install -y curl wget git htop iotop nano vim \
     python3 python3-pip python3-venv redis-server haproxy
-
-# Install development tools for llama.cpp
-sudo apt install -y pkg-config libopenblas-dev
 ```
 
-### Step 2.2: Setup llama.cpp for Heavy Models
+### Step 2.2: Setup Ollama for Large Models (Simplified Approach)
 
 ```bash
-# Create working directory
-mkdir -p ~/ai-infrastructure
-cd ~/ai-infrastructure
+# Install Ollama (same as jetson-node - consistent!)
+curl -fsSL https://ollama.com/install.sh | sh
 
-# Clone and build llama.cpp
-git clone https://github.com/ggerganov/llama.cpp.git
-cd llama.cpp
+# Configure Ollama for network access on different port
+export OLLAMA_HOST=0.0.0.0:11435
+echo 'export OLLAMA_HOST=0.0.0.0:11435' >> ~/.bashrc
+source ~/.bashrc
 
-# Build with OpenBLAS optimization for CPU
-mkdir build && cd build
-cmake .. -DLLAMA_BLAS=ON -DLLAMA_BLAS_VENDOR=OpenBLAS
-cmake --build . --config Release -j$(nproc)
+# Start Ollama service
+ollama serve &
 
-# Create models directory
-mkdir -p ~/models/llama-cpp
-cd ~/models/llama-cpp
+# Wait for service to start
+sleep 5
 
-# Download quantized models for complex tasks
-echo "Downloading quantized models (this may take time)..."
+# Pull large models that leverage 32GB RAM
+echo "📥 Starting with the best 7B model for learning..."
 
-# Llama 2 13B Chat Q4_K_M (good balance)
-wget -O llama-2-13b-chat.q4_K_M.gguf \
-  "https://huggingface.co/TheBloke/Llama-2-13B-Chat-GGUF/resolve/main/llama-2-13b-chat.q4_K_M.gguf"
+# Start with the best general-purpose 7B model
+ollama pull mistral:7b          # 7B parameters - best reasoning, perfect for LangGraph learning
 
-# Code Llama 13B for coding tasks
-wget -O codellama-13b-instruct.q4_K_M.gguf \
-  "https://huggingface.co/TheBloke/CodeLlama-13B-Instruct-GGUF/resolve/main/codellama-13b-instruct.q4_k_m.gguf"
+# Optional: Add these later when needed
+echo "💡 Add these later as needed:"
+echo "  ollama pull llama2:7b-chat    # Alternative for comparison"
+echo "  ollama pull codellama:7b      # Specialized for coding tasks"
 
-# Mistral 7B (efficient and capable)
-wget -O mistral-7b-instruct.q4_K_M.gguf \
-  "https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.q4_k_m.gguf"
-
-echo "✅ Models downloaded"
-ls -lh ~/models/llama-cpp/
+# Test models are working
+ollama list
+echo "✅ Large models ready on cpu-node!"
 ```
 
-### Step 2.3: Setup llama.cpp Server
+### Step 2.3: Test Ollama Server
 
 ```bash
-# Test llama.cpp server
-cd ~/ai-infrastructure/llama.cpp/build
-
-# Test with Mistral 7B first (smaller model)
-./bin/llama-server \
-  --model ~/models/llama-cpp/mistral-7b-instruct.q4_K_M.gguf \
-  --host 127.0.0.1 \
-  --port 8080 \
-  --ctx-size 4096 \
-  --threads $(nproc) \
-  --n-gpu-layers 0 \
-  --chat-template llama2 &
-
-# Wait for server to start
-sleep 10
-
-# Test the server
-curl http://localhost:8080/v1/chat/completions \
+# Test Ollama server locally
+curl -X POST http://localhost:11435/api/generate \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-3.5-turbo",
-    "messages": [{"role": "user", "content": "Hello! Test response."}],
-    "temperature": 0.7,
-    "max_tokens": 100
+    "model": "mistral:7b",
+    "prompt": "Hello! Test response from cpu-node.",
+    "stream": false
   }'
 
-# Stop test server
-pkill llama-server
+# Test interactive chat
+ollama run mistral:7b "What are you running on?"
 
-# Create systemd service for llama.cpp server
-sudo tee /etc/systemd/system/llama-server.service << EOF
+# Create systemd service for Ollama (persistent service)
+sudo tee /etc/systemd/system/ollama-cpu.service << EOF
 [Unit]
-Description=Llama.cpp Server
+Description=Ollama CPU Server
 After=network.target
 
 [Service]
 Type=simple
 User=$USER
-WorkingDirectory=/home/$USER/ai-infrastructure/llama.cpp/build
-ExecStart=/home/$USER/ai-infrastructure/llama.cpp/build/bin/llama-server \
-  --model /home/$USER/models/llama-cpp/llama-2-13b-chat.q4_K_M.gguf \
-  --host 0.0.0.0 \
-  --port 8080 \
-  --ctx-size 4096 \
-  --threads $(nproc) \
-  --n-gpu-layers 0 \
-  --chat-template llama2
+Environment=OLLAMA_HOST=0.0.0.0:11435
+ExecStart=/usr/local/bin/ollama serve
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -792,12 +841,16 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 
-# Enable and start llama server
-sudo systemctl enable llama-server
-sudo systemctl start llama-server
+# Enable and start Ollama service
+sudo systemctl enable ollama-cpu
+sudo systemctl start ollama-cpu
 
-# Check status
-sudo systemctl status llama-server
+# Check status  
+sudo systemctl status ollama-cpu
+
+# Test remote access from jetson
+echo "✅ Test from jetson-node:"
+echo "curl -X POST http://192.168.1.81:11435/api/generate -H 'Content-Type: application/json' -d '{\"model\": \"mistral:7b\", \"prompt\": \"Hello from jetson!\", \"stream\": false}'"
 ```
 
 ### Step 2.4: Setup Redis Cache
@@ -872,11 +925,11 @@ backend llm_servers
     balance roundrobin
     option httpchk GET /api/tags
     
-    # Primary: Jetson Ollama (fast responses, higher weight)
+    # Primary: Jetson Ollama (small/efficient models, higher weight)
     server jetson 192.168.1.177:11434 check weight 10 inter 30s fall 3 rise 2
     
-    # Secondary: Local llama.cpp (complex tasks, backup)
-    server cpu_llm 127.0.0.1:8080 check weight 5 backup inter 30s fall 3 rise 2
+    # Secondary: CPU Ollama (large models, backup)  
+    server cpu_ollama 127.0.0.1:11435 check weight 5 backup inter 30s fall 3 rise 2
 
 # Tools Load Balancer
 frontend tools_frontend

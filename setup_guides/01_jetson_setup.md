@@ -121,7 +121,16 @@ sudo apt install -y cuda-toolkit-12-2
 # Then add to PATH as above
 ```
 
-## Step 2: Install Docker and NVIDIA Container Runtime
+## Step 2: Install Docker and NVIDIA Container Runtime (OPTIONAL - Skip for Native Ollama)
+
+**🎯 NOTE**: If you're running Ollama **natively** (which is simpler and better for learning), **SKIP this entire Docker section** and go directly to Step 3: Install Ollama.
+
+Docker is only needed for:
+- Complex multi-service deployments
+- Strict service isolation requirements  
+- Production environments with orchestration
+
+For learning LangGraph with Ollama, **native installation is recommended**.
 
 ```bash
 # SAFER Docker installation approach for Jetson

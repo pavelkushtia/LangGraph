@@ -1,8 +1,10 @@
-# CPU Node Setup Guide (Coordinator + Heavy LLM + HAProxy + Redis)
+# CPU Node Setup Guide (Coordinator + Ollama Large Models + HAProxy + Redis)
 
 ## Overview
 **Machine**: cpu-node (192.168.1.81) - 32GB Intel i5-6500T  
-Your cpu-node serves as the **cluster coordinator**, handling heavy LLM tasks, load balancing, caching, and LangGraph orchestration.
+Your cpu-node serves as the **cluster coordinator**, handling large Ollama models, load balancing, caching, and LangGraph orchestration.
+
+**🎯 SIMPLIFIED APPROACH**: Using Ollama instead of llama.cpp for easier setup and consistent API with jetson-node!
 
 ## Prerequisites
 - 32GB RAM machine with Ubuntu/Debian
@@ -20,103 +22,70 @@ Your cpu-node serves as the **cluster coordinator**, handling heavy LLM tasks, l
 # Update system
 sudo apt update && sudo apt upgrade -y
 
-# Install essential packages
-sudo apt install -y curl wget git htop iotop nano vim build-essential cmake \
+# Install essential packages (simplified - no build tools needed!)
+sudo apt install -y curl wget git htop iotop nano vim \
     python3 python3-pip python3-venv redis-server haproxy
-
-# Install development tools for llama.cpp
-sudo apt install -y pkg-config libopenblas-dev
 ```
 
-## Step 2: Setup llama.cpp for Heavy Models
+## Step 2: Setup Ollama for Large Models (Simplified!)
 
 ```bash
-# Create working directory
-mkdir -p ~/ai-infrastructure
-cd ~/ai-infrastructure
+# Install Ollama (same as jetson-node - consistent!)
+curl -fsSL https://ollama.com/install.sh | sh
 
-# Clone and build llama.cpp
-git clone https://github.com/ggerganov/llama.cpp.git
-cd llama.cpp
+# Configure Ollama for network access on different port
+export OLLAMA_HOST=0.0.0.0:11435
+echo 'export OLLAMA_HOST=0.0.0.0:11435' >> ~/.bashrc
+source ~/.bashrc
 
-# Build with OpenBLAS optimization for CPU
-mkdir build && cd build
-cmake .. -DLLAMA_BLAS=ON -DLLAMA_BLAS_VENDOR=OpenBLAS
-cmake --build . --config Release -j$(nproc)
+# Start Ollama service
+ollama serve &
 
-# Create models directory
-mkdir -p ~/models/llama-cpp
-cd ~/models/llama-cpp
+# Wait for service to start
+sleep 5
 
-# Download quantized models for complex tasks
-echo "Downloading quantized models (this may take time)..."
+# Pull large models that leverage 32GB RAM
+echo "📥 Starting with the best 7B model for learning..."
 
-# Llama 2 13B Chat Q4_K_M (good balance)
-wget -O llama-2-13b-chat.q4_K_M.gguf \
-  "https://huggingface.co/TheBloke/Llama-2-13B-Chat-GGUF/resolve/main/llama-2-13b-chat.q4_K_M.gguf"
+# Start with the best general-purpose 7B model
+ollama pull mistral:7b          # 7B parameters - best reasoning, perfect for LangGraph learning
 
-# Code Llama 13B for coding tasks
-wget -O codellama-13b-instruct.q4_K_M.gguf \
-  "https://huggingface.co/TheBloke/CodeLlama-13B-Instruct-GGUF/resolve/main/codellama-13b-instruct.q4_k_m.gguf"
+# Optional: Add these later when needed
+echo "💡 Add these later as needed:"
+echo "  ollama pull llama2:7b-chat    # Alternative for comparison"
+echo "  ollama pull codellama:7b      # Specialized for coding tasks"
 
-# Mistral 7B (efficient and capable)
-wget -O mistral-7b-instruct.q4_K_M.gguf \
-  "https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.q4_k_m.gguf"
-
-echo "✅ Models downloaded"
-ls -lh ~/models/llama-cpp/
+# Test models are working
+ollama list
+echo "✅ Large models ready on cpu-node!"
 ```
 
-## Step 3: Setup llama.cpp Server
+## Step 3: Test Ollama Server
 
 ```bash
-# Test llama.cpp server
-cd ~/ai-infrastructure/llama.cpp/build
-
-# Test with Mistral 7B first (smaller model)
-./bin/llama-server \
-  --model ~/models/llama-cpp/mistral-7b-instruct.q4_K_M.gguf \
-  --host 127.0.0.1 \
-  --port 8080 \
-  --ctx-size 4096 \
-  --threads $(nproc) \
-  --n-gpu-layers 0 \
-  --chat-template llama2 &
-
-# Wait for server to start
-sleep 10
-
-# Test the server
-curl http://localhost:8080/v1/chat/completions \
+# Test Ollama server locally
+curl -X POST http://localhost:11435/api/generate \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-3.5-turbo",
-    "messages": [{"role": "user", "content": "Hello! Test response."}],
-    "temperature": 0.7,
-    "max_tokens": 100
+    "model": "mistral:7b",
+    "prompt": "Hello! Test response from cpu-node.",
+    "stream": false
   }'
 
-# Stop test server
-pkill llama-server
+# Test interactive chat
+ollama run mistral:7b "What are you running on?"
 
-# Create systemd service for llama.cpp server
-sudo tee /etc/systemd/system/llama-server.service << EOF
+# Create systemd service for Ollama (persistent service)
+sudo tee /etc/systemd/system/ollama-cpu.service << EOF
 [Unit]
-Description=Llama.cpp Server
+Description=Ollama CPU Server
 After=network.target
 
 [Service]
 Type=simple
 User=$USER
-WorkingDirectory=/home/$USER/ai-infrastructure/llama.cpp/build
-ExecStart=/home/$USER/ai-infrastructure/llama.cpp/build/bin/llama-server \
-  --model /home/$USER/models/llama-cpp/llama-2-13b-chat.q4_K_M.gguf \
-  --host 0.0.0.0 \
-  --port 8080 \
-  --ctx-size 4096 \
-  --threads $(nproc) \
-  --n-gpu-layers 0 \
-  --chat-template llama2
+Environment=OLLAMA_HOST=0.0.0.0:11435
+ExecStart=/usr/local/bin/ollama serve
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -126,12 +95,16 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 
-# Enable and start llama server
-sudo systemctl enable llama-server
-sudo systemctl start llama-server
+# Enable and start Ollama service
+sudo systemctl enable ollama-cpu
+sudo systemctl start ollama-cpu
 
 # Check status
-sudo systemctl status llama-server
+sudo systemctl status ollama-cpu
+
+# Test remote access from jetson
+echo "✅ Test from jetson-node:"
+echo "curl -X POST http://192.168.1.81:11435/api/generate -H 'Content-Type: application/json' -d '{\"model\": \"mistral:7b\", \"prompt\": \"Hello from jetson!\", \"stream\": false}'"
 ```
 
 ## Step 4: Setup Redis Cache
@@ -209,8 +182,8 @@ backend llm_servers
     # Primary: Jetson Ollama (fast responses, higher weight)
     server jetson 192.168.1.177:11434 check weight 10 inter 30s fall 3 rise 2
     
-    # Secondary: Local llama.cpp (complex tasks, backup)
-    server cpu_llm 127.0.0.1:8080 check weight 5 backup inter 30s fall 3 rise 2
+    # Secondary: CPU Ollama (large models, backup)  
+    server cpu_ollama 127.0.0.1:11435 check weight 5 backup inter 30s fall 3 rise 2
 
 # Tools Load Balancer
 frontend tools_frontend
@@ -261,7 +234,7 @@ sudo ufw allow 9000/tcp  # LLM load balancer
 sudo ufw allow 9001/tcp  # Tools load balancer  
 sudo ufw allow 9002/tcp  # Embeddings load balancer
 sudo ufw allow 8888/tcp  # Health check
-sudo ufw allow 8080/tcp  # Direct llama.cpp access
+sudo ufw allow 11435/tcp  # Direct Ollama access
 sudo ufw allow 6379/tcp  # Redis
 ```
 
@@ -315,9 +288,9 @@ CLUSTER = ClusterConfig(
     ),
     cpu_coordinator=MachineConfig(
         ip="192.168.1.81",
-        port=8080,
-        service_type="llama_cpp",
-        health_endpoint="/health"
+        port=11435,
+        service_type="ollama",
+        health_endpoint="/api/tags"
     ),
     rp_embeddings=MachineConfig(
         ip="192.168.1.178",
@@ -380,14 +353,13 @@ sudo systemctl restart cpufrequtils
 ## Step 8: Testing Setup
 
 ```bash
-# Test llama.cpp server
-curl http://localhost:8080/v1/chat/completions \
+# Test Ollama server
+curl -X POST http://localhost:11435/api/generate \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-3.5-turbo",
-    "messages": [{"role": "user", "content": "Hello!"}],
-    "temperature": 0.7,
-    "max_tokens": 50
+    "model": "mistral:7b",
+    "prompt": "Hello! Test response from cpu-node.",
+    "stream": false
   }'
 
 # Test Redis
@@ -410,7 +382,7 @@ echo "✅ cpu-node setup verification completed!"
 
 | Service | Memory Usage | CPU Usage | Port | Purpose |
 |---------|-------------|-----------|------|---------|
-| **llama.cpp** | 8-12GB | 70-90% | 8080 | Heavy LLM inference |
+| **Ollama** | 6-10GB | 50-70% | 11435 | Large LLM inference |
 | **Redis** | 4GB | 5-10% | 6379 | Caching and sessions |
 | **HAProxy** | 200MB | 2-5% | 9000-9002 | Load balancing |
 | **LangGraph** | 1-2GB | 10-20% | - | Workflow orchestration |
@@ -468,13 +440,13 @@ redis-cli -h 192.168.1.81 -a langgraph_redis_pass info memory
 
 ## Integration Points
 - **Primary LLM**: Routes to jetson-node (192.168.1.177:11434)
-- **Secondary LLM**: Local llama.cpp server (127.0.0.1:8080)
+- **Secondary LLM**: Local Ollama server (127.0.0.1:11435)
 - **Load Balancer**: HAProxy distributes requests across cluster
 - **Cache**: Redis stores session data and responses
 - **Monitoring**: Health checks from worker-node4
 
 ## Next Steps
-- ✅ **Complete**: cpu-node coordinator with HAProxy + Redis + llama.cpp
+- ✅ **Complete**: cpu-node coordinator with HAProxy + Redis + Ollama
 - ⏭️ **Next**: [03_langgraph_integration.md](03_langgraph_integration.md) - LangGraph setup
 - 🔗 **Workers**: [04_distributed_coordination.md](04_distributed_coordination.md) - Setup worker nodes
 - 🎯 **Full Guide**: [00_complete_deployment_guide.md](00_complete_deployment_guide.md) - Complete walkthrough
