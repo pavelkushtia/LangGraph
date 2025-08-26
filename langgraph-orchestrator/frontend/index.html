@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LangGraph Orchestrator</title>
+    <meta name="description" content="AI Workflow Orchestration Platform for LangGraph Clusters" />
+    <meta name="keywords" content="AI, LangGraph, Workflow, Orchestration, Machine Learning" />
+    
+    <!-- Preconnect to improve font loading performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Favicon and App Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#3b82f6" />
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="LangGraph Orchestrator" />
+    <meta property="og:description" content="AI Workflow Orchestration Platform for LangGraph Clusters" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/og-image.jpg" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="LangGraph Orchestrator" />
+    <meta name="twitter:description" content="AI Workflow Orchestration Platform for LangGraph Clusters" />
+    <meta name="twitter:image" content="/og-image.jpg" />
+    
+    <!-- Prevent FOUC (Flash of Unstyled Content) -->
+    <style>
+      html {
+        background-color: #f9fafb;
+      }
+      
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      
+      /* Loading spinner */
+      .loading-spinner {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        border: 4px solid #e5e7eb;
+        border-top: 4px solid #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        z-index: 1000;
+      }
+      
+      @keyframes spin {
+        0% { transform: translate(-50%, -50%) rotate(0deg); }
+        100% { transform: translate(-50%, -50%) rotate(360deg); }
+      }
+      
+      /* Hide loading spinner once React loads */
+      .app-loaded .loading-spinner {
+        display: none;
+      }
+      
+      /* Initial loading state */
+      #root {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .app-loaded #root {
+        display: block;
+        min-height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Loading spinner shown while React app loads -->
+    <div class="loading-spinner"></div>
+    
+    <!-- React app root -->
+    <div id="root">
+      <noscript>
+        <div style="text-align: center; padding: 2rem; font-family: system-ui, sans-serif;">
+          <h1>JavaScript Required</h1>
+          <p>This application requires JavaScript to be enabled in your browser.</p>
+          <p>Please enable JavaScript and refresh the page to continue.</p>
+        </div>
+      </noscript>
+    </div>
+    
+    <!-- React app script -->
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Mark app as loaded when React takes over -->
+    <script>
+      // This will be executed after React mounts
+      setTimeout(() => {
+        document.body.classList.add('app-loaded');
+      }, 100);
+    </script>
+  </body>
+</html>

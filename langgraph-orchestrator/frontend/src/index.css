@@ -1,0 +1,290 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* React Flow Styles */
+@import '@reactflow/core/dist/style.css';
+@import '@reactflow/controls/dist/style.css';
+@import '@reactflow/minimap/dist/style.css';
+@import '@reactflow/node-toolbar/dist/style.css';
+
+/* Base Styles */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Component Styles */
+@layer components {
+  /* Button Variants */
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium px-4 py-2 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+  }
+  
+  .btn-success {
+    @apply bg-success-600 hover:bg-success-700 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-success-500 focus:ring-offset-2;
+  }
+  
+  .btn-warning {
+    @apply bg-warning-600 hover:bg-warning-700 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-warning-500 focus:ring-offset-2;
+  }
+  
+  .btn-error {
+    @apply bg-error-600 hover:bg-error-700 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-error-500 focus:ring-offset-2;
+  }
+  
+  .btn-outline {
+    @apply border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium px-4 py-2 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+  
+  /* Card Styles */
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+  }
+  
+  .card-header {
+    @apply border-b border-gray-200 pb-4 mb-4;
+  }
+  
+  /* Status Indicators */
+  .status-online {
+    @apply bg-success-100 text-success-800 px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .status-offline {
+    @apply bg-error-100 text-error-800 px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .status-degraded {
+    @apply bg-warning-100 text-warning-800 px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .status-healthy {
+    @apply bg-success-100 text-success-800 px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .status-unhealthy {
+    @apply bg-error-100 text-error-800 px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  /* Form Styles */
+  .form-input {
+    @apply block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm;
+  }
+  
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+  
+  .form-error {
+    @apply text-error-600 text-sm mt-1;
+  }
+  
+  /* Tab Styles */
+  .tab-active {
+    @apply border-primary-500 text-primary-600 bg-primary-50;
+  }
+  
+  .tab-inactive {
+    @apply border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300;
+  }
+  
+  /* Workflow Node Styles */
+  .workflow-node {
+    @apply bg-white border-2 border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+  
+  .workflow-node.selected {
+    @apply border-primary-500 shadow-glow;
+  }
+  
+  .workflow-node-llm {
+    @apply border-blue-300 bg-blue-50;
+  }
+  
+  .workflow-node-embeddings {
+    @apply border-purple-300 bg-purple-50;
+  }
+  
+  .workflow-node-tools {
+    @apply border-green-300 bg-green-50;
+  }
+  
+  .workflow-node-decision {
+    @apply border-yellow-300 bg-yellow-50;
+  }
+  
+  .workflow-node-data {
+    @apply border-gray-300 bg-gray-50;
+  }
+  
+  .workflow-node-output {
+    @apply border-red-300 bg-red-50;
+  }
+  
+  /* Progress Bar */
+  .progress-bar {
+    @apply w-full bg-gray-200 rounded-full h-2.5;
+  }
+  
+  .progress-fill {
+    @apply bg-primary-600 h-2.5 rounded-full transition-all duration-300 ease-in-out;
+  }
+  
+  /* Loading Spinner */
+  .spinner {
+    @apply animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600;
+  }
+  
+  /* Notification Styles */
+  .notification-success {
+    @apply bg-success-50 border border-success-200 text-success-800 rounded-lg p-4;
+  }
+  
+  .notification-error {
+    @apply bg-error-50 border border-error-200 text-error-800 rounded-lg p-4;
+  }
+  
+  .notification-warning {
+    @apply bg-warning-50 border border-warning-200 text-warning-800 rounded-lg p-4;
+  }
+  
+  .notification-info {
+    @apply bg-primary-50 border border-primary-200 text-primary-800 rounded-lg p-4;
+  }
+}
+
+/* Utility Classes */
+@layer utilities {
+  .text-gradient {
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  }
+  
+  .bg-gradient-success {
+    background: linear-gradient(135deg, #22c55e, #15803d);
+  }
+  
+  .bg-gradient-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+  }
+  
+  .bg-gradient-error {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+  }
+  
+  /* Scrollbar Styles */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #f9fafb;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: #f9fafb;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: #9ca3af;
+  }
+}
+
+/* Dark Mode Support */
+.dark {
+  @apply bg-gray-900 text-gray-100;
+}
+
+.dark .card {
+  @apply bg-gray-800 border-gray-700;
+}
+
+.dark .workflow-node {
+  @apply bg-gray-800 border-gray-600;
+}
+
+.dark .form-input {
+  @apply bg-gray-800 border-gray-600 text-gray-100;
+}
+
+/* Custom React Flow Styles */
+.react-flow__node {
+  font-family: 'Inter', sans-serif;
+}
+
+.react-flow__edge-path {
+  stroke: #6b7280;
+  stroke-width: 2;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #3b82f6;
+  stroke-width: 3;
+}
+
+.react-flow__controls {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.react-flow__minimap {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Animation Classes */
+.fade-enter {
+  opacity: 0;
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity 300ms ease-in;
+}
+
+.fade-exit {
+  opacity: 1;
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity 300ms ease-in;
+}
+
+/* Responsive Design Utilities */
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none;
+  }
+  
+  .mobile-full {
+    width: 100%;
+  }
+}
