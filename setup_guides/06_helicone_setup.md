@@ -52,7 +52,7 @@ echo "✅ Helicone available at: http://192.168.1.81:3001"
 ```bash
 # Install Helicone Python client
 cd ~/ai-infrastructure/langgraph-config
-source ~/langgraph-env/bin/activate
+source ../langgraph-env/bin/activate
 
 pip install helicone
 

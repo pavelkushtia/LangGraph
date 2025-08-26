@@ -82,7 +82,7 @@ curl http://192.168.1.81:3000/api/public/health
 ```bash
 # Install Langfuse Python SDK
 cd ~/ai-infrastructure/langgraph-config
-source ~/langgraph-env/bin/activate
+source ../langgraph-env/bin/activate
 
 pip install langfuse
 

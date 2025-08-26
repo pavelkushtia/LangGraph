@@ -2231,9 +2231,6 @@ ssh sanzad@192.168.1.81
 # Navigate to LangGraph directory
 cd ~/ai-infrastructure/langgraph-config
 
-# Copy the cluster orchestrator from our setup
-cp /home/sanzad/git/langgraph/setup_guides/04_distributed_coordination.md ./
-
 # Create the cluster orchestrator script
 cat > cluster_orchestrator.py << 'EOF'
 #!/usr/bin/env python3
@@ -2432,7 +2429,8 @@ EOF
 chmod +x cluster_orchestrator.py
 
 # Install Redis client for testing
-source ~/langgraph-env/bin/activate
+cd ~/ai-infrastructure/langgraph-config
+source ../langgraph-env/bin/activate
 pip install redis
 ```
 
@@ -2441,7 +2439,7 @@ pip install redis
 ```bash
 # Test cluster startup
 cd ~/ai-infrastructure/langgraph-config
-source ~/langgraph-env/bin/activate
+source ../langgraph-env/bin/activate
 
 echo "🧪 Starting complete cluster test..."
 
@@ -2505,21 +2503,21 @@ echo "🎉 Your LangGraph AI cluster is ready for production!"
 cat > ~/start_cluster.sh << 'EOF'
 #!/bin/bash
 cd ~/ai-infrastructure/langgraph-config
-source ~/langgraph-env/bin/activate
+source ../langgraph-env/bin/activate
 python3 cluster_orchestrator.py start
 EOF
 
 cat > ~/stop_cluster.sh << 'EOF'
 #!/bin/bash
 cd ~/ai-infrastructure/langgraph-config
-source ~/langgraph-env/bin/activate
+source ../langgraph-env/bin/activate
 python3 cluster_orchestrator.py stop
 EOF
 
 cat > ~/cluster_status.sh << 'EOF'
 #!/bin/bash
 cd ~/ai-infrastructure/langgraph-config
-source ~/langgraph-env/bin/activate
+source ../langgraph-env/bin/activate
 python3 cluster_orchestrator.py status
 EOF
 
