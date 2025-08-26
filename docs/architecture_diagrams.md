@@ -7,34 +7,34 @@ This diagram shows how your hardware is organized for optimal AI workloads:
 ```mermaid
 graph TB
     subgraph "LangGraph Control Layer"
-        LG[cpu-node<br/>192.168.1.81<br/>32GB RAM, i5-6500T<br/>LangGraph Orchestrator]
+        LG["cpu-node (192.168.1.81)<br/>LangGraph Orchestrator + HAProxy"]
     end
     
     subgraph "Model Inference Layer"
-        JO[jetson-node<br/>192.168.1.177<br/>Orin Nano 8GB<br/>Primary LLM Server<br/>Ollama + Small Models]
-        CPU32[cpu-node<br/>192.168.1.81<br/>32GB RAM<br/>Large Model Server<br/>llama.cpp + Quantized]
+        JO["jetson-node (192.168.1.177)<br/>Ollama + Small Models<br/>llama3.2:3b, llama3.2:1b"]
+        CPU32["cpu-node (192.168.1.81)<br/>Ollama + Large Models<br/>mistral:7b"]
     end
     
     subgraph "Worker Nodes"
-        RPI[rp-node<br/>192.168.1.178<br/>8GB ARM Cortex-A76<br/>Embeddings + Vector Search]
-        W3[worker-node3<br/>192.168.1.105<br/>6GB VM<br/>Tool Execution]
-        W4[worker-node4<br/>192.168.1.137<br/>6GB VM<br/>Monitoring + Logging]
+        RPI["rp-node (192.168.1.178)<br/>Embeddings + Vector Search"]
+        W3["worker-node3 (192.168.1.105)<br/>Tool Execution"]
+        W4["worker-node4 (192.168.1.137)<br/>Monitoring + Logging"]
     end
     
     subgraph "Storage Layer"
-        VDB[Vector Database<br/>ChromaDB on rp-node]
-        CACHE[Redis Cache<br/>On cpu-node]
+        VDB["Vector Database<br/>ChromaDB on rp-node"]
+        CACHE["Redis Cache<br/>On cpu-node"]
     end
     
-    LG -->|Task Distribution| JO
-    LG -->|Heavy Tasks| CPU32
-    LG -->|Embeddings| RPI
-    LG -->|Tool Calls| W3
-    LG -->|Monitoring| W4
+    LG --> JO
+    LG --> CPU32
+    LG --> RPI
+    LG --> W3
+    LG --> W4
     
-    JO -->|Embeddings| VDB
-    CPU32 -->|Results| CACHE
-    RPI -->|Vector Search| VDB
+    JO --> VDB
+    CPU32 --> CACHE
+    RPI --> VDB
     
     style JO fill:#e1f5fe
     style CPU32 fill:#f3e5f5
@@ -48,13 +48,13 @@ Shows how machines communicate:
 
 ```mermaid
 graph LR
-    subgraph "Your Local Network 192.168.1.x"
-        J[jetson-node<br/>192.168.1.177:11434<br/>Ollama API]
-        C1[cpu-node<br/>192.168.1.81:8080<br/>llama.cpp + HAProxy]
-        C2[rp-node<br/>192.168.1.178:8081<br/>Embeddings API]
-        C3[worker-node3<br/>192.168.1.105:8082<br/>Tools API]
-        C4[worker-node4<br/>192.168.1.137:8083<br/>Monitoring]
-        C5[cpu-node<br/>192.168.1.81:6379<br/>Redis Cache]
+    subgraph "Local Network 192.168.1.x"
+        J["jetson-node<br/>192.168.1.177:11434<br/>Ollama API"]
+        C1["cpu-node<br/>192.168.1.81:11435<br/>Ollama + HAProxy:9000"]
+        C2["rp-node<br/>192.168.1.178:8081<br/>Embeddings API"]
+        C3["worker-node3<br/>192.168.1.105:8082<br/>Tools API"]
+        C4["worker-node4<br/>192.168.1.137:8083<br/>Monitoring"]
+        C5["cpu-node<br/>192.168.1.81:6379<br/>Redis Cache"]
     end
     
     subgraph "Load Balancer (HAProxy)"
@@ -157,31 +157,42 @@ graph LR
 
 Your learning journey with this setup:
 
-```mermaid
-timeline
-    title Learning Path with Local AI Setup
-    
-    section Week 1 : Setup Phase
-        Day 1-2    : Configure Jetson Orin
-                   : Install Ollama + models
-        Day 3-4    : Setup CPU machines
-                   : Configure llama.cpp
-        Day 5-7    : LangGraph integration
-                   : Test basic workflows
-    
-    section Week 2-4 : Learning Phase
-        Week 2     : Basic LangGraph patterns
-                   : Simple agent workflows
-        Week 3     : Complex multi-agent systems
-                   : Tool integration
-        Week 4     : Custom workflows
-                   : Performance optimization
-    
-    section Month 2+ : Advanced
-        Advanced   : Custom model fine-tuning
-                   : Distributed optimization
-                   : Production deployment
-```
+### 📅 Learning Timeline
+
+**🚀 Week 1: Setup Phase**
+- **Day 1-2**: Configure Jetson Orin
+  - Install Ollama + models (llama3.2:3b, llama3.2:1b)
+  - Test basic inference
+- **Day 3-4**: Setup CPU machines  
+  - Configure Ollama + HAProxy + Redis
+  - Test load balancing
+- **Day 5-7**: LangGraph integration
+  - Set up intelligent routing
+  - Test basic workflows
+
+**🧠 Week 2-4: Learning Phase** 
+- **Week 2**: Basic LangGraph patterns
+  - Simple agent workflows
+  - State management
+- **Week 3**: Complex multi-agent systems
+  - Tool integration (web search, scraping)
+  - Multi-step workflows
+- **Week 4**: Custom workflows  
+  - Performance optimization
+  - Advanced routing strategies
+
+**🎯 Month 2+: Advanced Phase**
+- Custom model experiments
+- Distributed optimization
+- Production-ready deployments
+
+### 📊 Progress Tracking
+
+Monitor your progress with:
+- HAProxy stats: `http://cpu-node:9000/haproxy_stats`  
+- System monitoring: `htop` on each machine
+- LangGraph workflow logs
+- Model performance metrics
 
 ## Monitoring Dashboard Layout
 

@@ -6,11 +6,11 @@ A complete guide to setting up a distributed LangGraph infrastructure using your
 
 Your optimal setup uses your **available hardware** efficiently:
 
-- **jetson-node (Orin Nano 8GB)**: Primary LLM server (Ollama + small models)
-- **cpu-node (32GB Intel)**: Coordinator + heavy LLM tasks (llama.cpp + large models)
-- **rp-node (8GB ARM)**: Embeddings server (efficient ARM processing)
-- **worker-node3 (6GB VM)**: Tools execution server
-- **worker-node4 (6GB VM)**: Monitoring and health checks
+- **jetson-node (Orin Nano 8GB)**: Primary LLM server (Ollama + small/fast models)
+- **cpu-node (32GB Intel)**: Coordinator + heavy LLM tasks (Ollama + large models) + HAProxy + Redis
+- **rp-node (8GB ARM)**: Embeddings server (efficient ARM processing) 
+- **worker-node3 (6GB VM)**: Tools execution server (web search, scraping, commands)
+- **worker-node4 (6GB VM)**: Monitoring and health checks (optional)
 
 ## 🚀 Quick Start
 
@@ -25,7 +25,7 @@ Follow the setup guides in order - each guide is self-contained and updated from
 
 # 2. Setup CPU Coordinator (Heavy LLM + Load Balancer + Cache)  
 # Follow: setup_guides/02_cpu_setup.md
-# Sets up llama.cpp + HAProxy + Redis on cpu-node (192.168.1.81)
+# Sets up Ollama + HAProxy + Redis on cpu-node (192.168.1.81)
 
 # 3. Setup LangGraph Integration (Workflows + Routing)
 # Follow: setup_guides/03_langgraph_integration.md  
@@ -74,13 +74,14 @@ python3 example_workflows.py
 | Machine | Model | RAM Usage | Speed | Use Case |
 |---------|-------|-----------|-------|----------|
 | jetson-node | Llama 3.2 3B | ~3GB | 15-25 tok/s | General chat |
-| jetson-node | TinyLlama 1.1B | ~1.5GB | 30-50 tok/s | Quick responses |
-| cpu-node | Llama 13B Q4 | ~8GB | 5-10 tok/s | Complex analysis |
-| rp-node | Embeddings | ~2GB | 50+ emb/s | Vector search (ARM) |
+| jetson-node | Llama 3.2 1B | ~1.5GB | 30-50 tok/s | Quick responses |
+| cpu-node | Mistral 7B | ~4.4GB | 8-15 tok/s | Complex analysis |
+| rp-node | all-MiniLM-L6-v2 | ~200MB | 1000+ emb/s | Semantic intelligence (ARM) |
 
 ## 📚 Documentation
 
 - **[LangGraph Concepts & Workflows](docs/langgraph_concepts_and_workflows.md)** - How LangGraph orchestrates your distributed setup ⭐
+- **[Embedding Server Deep Dive](docs/embedding_server_deep_dive.md)** - Complete guide to the semantic intelligence layer 🧠
 - **[Architecture Diagrams](docs/architecture_diagrams.md)** - System diagrams and visual flow charts
 - **[Example Workflows](examples/example_workflows.py)** - Complete LangGraph workflow implementations
 
