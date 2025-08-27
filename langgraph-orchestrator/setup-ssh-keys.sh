@@ -30,8 +30,8 @@ echo ""
 NODES=(
     "192.168.1.177"  # Jetson
     "192.168.1.178"  # RPi Embeddings
-    "192.168.1.105"  # Worker Tools
-    "192.168.1.137"  # Worker Monitor
+    "192.168.1.190"  # Worker Tools
+    "192.168.1.191"  # Worker Monitor
 )
 
 NODE_NAMES=(

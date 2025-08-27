@@ -91,7 +91,7 @@ export class WorkflowEngine extends EventEmitter {
     llm_balancer: 'http://192.168.1.81:9000/api/generate',
     embeddings: 'http://192.168.1.81:9002/embeddings',
     tools: 'http://192.168.1.81:9001',
-    monitoring: 'http://192.168.1.137:8083'
+    monitoring: 'http://192.168.1.191:8083'
   };
 
   constructor(databaseManager: DatabaseManager) {

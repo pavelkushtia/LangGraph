@@ -102,7 +102,7 @@ fi
 print_status "Testing network connectivity from cluster nodes..."
 
 # List of cluster nodes
-NODES=("192.168.1.177" "192.168.1.178" "192.168.1.105" "192.168.1.137")
+NODES=("192.168.1.177" "192.168.1.178" "192.168.1.190" "192.168.1.191")
 NODE_NAMES=("Jetson" "RPi Embeddings" "Worker Tools" "Worker Monitor")
 
 for i in "${!NODES[@]}"; do

@@ -27,8 +27,8 @@ graph TB
         O[Jetson - Ollama<br/>192.168.1.177]
         P[CPU - Redis/HAProxy<br/>192.168.1.81]
         Q[RPi - Embeddings<br/>192.168.1.178]
-        R[Worker - Tools<br/>192.168.1.105]
-        S[Monitor Service<br/>192.168.1.137]
+        R[Worker - Tools<br/>192.168.1.190]
+        S[Monitor Service<br/>192.168.1.191]
     end
     
     A --> I
@@ -73,8 +73,8 @@ graph TB
   - Jetson Orin Nano (192.168.1.177) - LLM Processing
   - CPU Coordinator (192.168.1.81) - Redis, HAProxy, Llama.cpp
   - RPi Embeddings (192.168.1.178) - Vector processing
-  - Worker Tools (192.168.1.105) - Tool execution
-  - Worker Monitor (192.168.1.137) - System monitoring
+  - Worker Tools (192.168.1.190) - Tool execution
+  - Worker Monitor (192.168.1.191) - System monitoring
 - **Service Monitoring**: Individual service health checks
 - **Resource Metrics**: CPU, memory, disk usage per node
 - **Network Status**: Connectivity and latency monitoring
@@ -148,8 +148,8 @@ The orchestrator is configured to be accessible from all nodes in your cluster:
 
 - **From Jetson (192.168.1.177)**: http://192.168.1.81:3000
 - **From RPi Embeddings (192.168.1.178)**: http://192.168.1.81:3000
-- **From Worker Tools (192.168.1.105)**: http://192.168.1.81:3000
-- **From Worker Monitor (192.168.1.137)**: http://192.168.1.81:3000
+- **From Worker Tools (192.168.1.190)**: http://192.168.1.81:3000
+- **From Worker Monitor (192.168.1.191)**: http://192.168.1.81:3000
 - **Local access**: http://localhost:3000
 
 The setup script automatically:

@@ -226,14 +226,14 @@ router.get('/config', async (req, res) => {
         {
           id: 'worker_tools',
           name: 'Worker Tools',
-          ip: '192.168.1.105',
+          ip: '192.168.1.190',
           services: ['tools-server'],
           role: 'Tool Execution'
         },
         {
           id: 'worker_monitor',
           name: 'Worker Monitor',
-          ip: '192.168.1.137',
+          ip: '192.168.1.191',
           services: ['monitoring-server'],
           role: 'Monitoring & Analytics'
         }
@@ -242,7 +242,7 @@ router.get('/config', async (req, res) => {
         llm_balancer: 'http://192.168.1.81:9000',
         tools_balancer: 'http://192.168.1.81:9001',
         embeddings_balancer: 'http://192.168.1.81:9002',
-        cluster_health: 'http://192.168.1.137:8083/cluster_health',
+        cluster_health: 'http://192.168.1.191:8083/cluster_health',
         haproxy_stats: 'http://192.168.1.81:9000/haproxy_stats'
       },
       serviceTypes: {

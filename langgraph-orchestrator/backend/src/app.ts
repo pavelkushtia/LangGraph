@@ -36,8 +36,8 @@ class LangGraphOrchestratorApp {
           "http://192.168.1.81:3000",
           "http://192.168.1.177:3000",
           "http://192.168.1.178:3000", 
-          "http://192.168.1.105:3000",
-          "http://192.168.1.137:3000",
+          "http://192.168.1.190:3000",
+          "http://192.168.1.191:3000",
           // Allow any origin in the local network for development
           /^http:\/\/192\.168\.1\.\d+:3000$/
         ],
@@ -97,8 +97,8 @@ class LangGraphOrchestratorApp {
         "http://192.168.1.81:3000",
         "http://192.168.1.177:3000",
         "http://192.168.1.178:3000", 
-        "http://192.168.1.105:3000",
-        "http://192.168.1.137:3000",
+        "http://192.168.1.190:3000",
+        "http://192.168.1.191:3000",
         // Allow any origin in the local network for development
         /^http:\/\/192\.168\.1\.\d+:3000$/
       ],
