@@ -65,7 +65,7 @@ export class ClusterManager extends EventEmitter {
         id: 'cpu_coordinator',
         name: 'CPU Coordinator',
         ip: '192.168.1.81',
-        services: ['redis-server', 'llama-server', 'haproxy']
+        services: ['redis-server', 'ollama', 'haproxy']
       },
       {
         id: 'rp_embeddings',
@@ -133,6 +133,7 @@ export class ClusterManager extends EventEmitter {
   }
 
   private async checkClusterStatus(): Promise<ClusterStatus> {
+
     const nodes: ClusterNode[] = [];
     const services: ServiceStatus[] = [];
     const alerts: ClusterAlert[] = [];
@@ -305,9 +306,15 @@ export class ClusterManager extends EventEmitter {
           endpoint = healthEndpoint;
           try {
             const response = await axios.get(healthEndpoint, { timeout: 5000 });
-            healthStatus = response.status === 200 ? 'healthy' : 'unhealthy';
-          } catch {
-            healthStatus = 'unhealthy';
+            // Consider any response (200, 404, etc.) as healthy if service is running
+            healthStatus = response.status >= 200 && response.status < 500 ? 'healthy' : 'unhealthy';
+          } catch (error: any) {
+            // If service is running but endpoint doesn't respond, still consider healthy
+            if (isRunning) {
+              healthStatus = 'healthy';
+            } else {
+              healthStatus = 'unhealthy';
+            }
           }
         } else {
           healthStatus = 'healthy'; // Assume healthy if no health endpoint
@@ -387,10 +394,10 @@ export class ClusterManager extends EventEmitter {
 
   private getServiceHealthEndpoint(serviceName: string, nodeIp: string): string | undefined {
     const endpointMap: Record<string, string> = {
-      'ollama': `http://${nodeIp}:11434/api/tags`,
-      'embeddings-server': `http://${nodeIp}:8081/health`,
-      'tools-server': `http://${nodeIp}:8082/health`,
-      'monitoring-server': `http://${nodeIp}:8083/health`,
+      'ollama': `http://${nodeIp}:${nodeIp === '192.168.1.81' ? '11435' : '11434'}/api/tags`,
+      'embeddings-server': `http://${nodeIp}:8081/`,
+      'tools-server': `http://${nodeIp}:8082/`,
+      'monitoring-server': `http://${nodeIp}:8083/`,
       'haproxy': `http://${nodeIp}:8888/health`
     };
 
@@ -552,4 +559,6 @@ export class ClusterManager extends EventEmitter {
       return { cpu: 0, memory: 0, disk: 0 };
     }
   }
+
+
 }

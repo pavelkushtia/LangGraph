@@ -11,14 +11,12 @@ sleep 2
 trap 'kill $(jobs -p) 2>/dev/null; exit' EXIT INT TERM
 
 echo "🔧 Starting backend server..."
-cd backend && npm run dev &
+(cd backend && npm run dev) &
 BACKEND_PID=$!
 
 echo "🎨 Starting frontend server..."
-cd ../frontend && npm run dev &
+(cd frontend && npm run dev) &
 FRONTEND_PID=$!
-
-cd ..
 
 echo "✅ Services starting up..."
 echo "   - Backend: http://192.168.1.81:3001"

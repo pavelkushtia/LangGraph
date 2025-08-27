@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Workflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  definition  String   // Stores the workflow graph as JSON string
+  category    String   @default("custom")
+  isTemplate  Boolean  @default(false)
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  executions WorkflowExecution[]
+  
+  @@map("workflows")
+}
+
+model WorkflowExecution {
+  id         String                @id @default(cuid())
+  workflowId String
+  status     String                @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, CANCELLED
+  input      String?               // Input parameters as JSON string
+  output     String?               // Execution results as JSON string
+  error      String?               // Error message if failed
+  progress   Float                 @default(0)
+  startedAt  DateTime?
+  completedAt DateTime?
+  createdAt  DateTime              @default(now())
+  
+  workflow   Workflow              @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  steps      WorkflowExecutionStep[]
+  
+  @@map("workflow_executions")
+}
+
+model WorkflowExecutionStep {
+  id          String   @id @default(cuid())
+  executionId String
+  nodeId      String   // References the node in the workflow definition
+  status      String   @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, SKIPPED
+  input       String?  // Input as JSON string
+  output      String?  // Output as JSON string
+  error       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  
+  execution   WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  
+  @@map("workflow_execution_steps")
+}
+
+model ClusterNode {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  ip          String   @unique
+  services    String   // Array of services as JSON string
+  status      String   @default("UNKNOWN") // ONLINE, OFFLINE, DEGRADED, UNKNOWN
+  lastSeen    DateTime?
+  resources   String?  // CPU, memory, disk usage as JSON string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("cluster_nodes")
+}

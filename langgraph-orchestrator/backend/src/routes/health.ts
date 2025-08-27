@@ -203,12 +203,13 @@ router.get('/cluster', async (req, res) => {
 // System logs
 router.get('/logs', async (req, res) => {
   try {
-    const { limit = 100, level } = req.query;
+    const { limit = 100, level, offset = 0 } = req.query;
     const databaseManager = (req as any).services.databaseManager as DatabaseManager;
     
     const logs = await databaseManager.getLogs(
+      level as string,
       parseInt(limit as string) || 100,
-      level as string
+      parseInt(offset as string) || 0
     );
     
     res.json({

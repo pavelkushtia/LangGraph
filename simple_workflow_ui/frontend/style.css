@@ -1,0 +1,165 @@
+/* Custom styles for the LangGraph Research UI */
+
+/* Progress indicators */
+.progress-step.active .step-indicator {
+    @apply bg-blue-600 border-blue-600;
+}
+
+.progress-step.completed .step-indicator {
+    @apply bg-green-600 border-green-600;
+}
+
+.progress-step.active .step-indicator::after {
+    content: '';
+    @apply w-2 h-2 bg-white rounded-full;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.progress-step.completed .step-indicator::after {
+    content: '✓';
+    @apply text-white text-xs font-bold;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    line-height: 1;
+}
+
+.step-indicator {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Enhanced prose styles for research results */
+.prose {
+    @apply text-gray-800;
+}
+
+.prose h1 {
+    @apply text-3xl font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200;
+}
+
+.prose h2 {
+    @apply text-2xl font-semibold text-gray-900 mb-4 mt-8;
+}
+
+.prose h3 {
+    @apply text-xl font-medium text-gray-800 mb-3 mt-6;
+}
+
+.prose p {
+    @apply mb-4 leading-relaxed;
+}
+
+.prose ul, .prose ol {
+    @apply mb-4 ml-6;
+}
+
+.prose li {
+    @apply mb-2;
+}
+
+.prose strong {
+    @apply font-semibold text-gray-900;
+}
+
+.prose em {
+    @apply italic text-gray-700;
+}
+
+.prose code {
+    @apply bg-gray-100 px-2 py-1 rounded text-sm font-mono;
+}
+
+.prose pre {
+    @apply bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto mb-4;
+}
+
+.prose blockquote {
+    @apply border-l-4 border-blue-500 pl-4 italic text-gray-700 my-4;
+}
+
+.prose a {
+    @apply text-blue-600 hover:text-blue-800 underline;
+}
+
+.prose table {
+    @apply w-full border-collapse border border-gray-300 mb-4;
+}
+
+.prose th {
+    @apply bg-gray-50 border border-gray-300 px-4 py-2 font-semibold text-left;
+}
+
+.prose td {
+    @apply border border-gray-300 px-4 py-2;
+}
+
+/* Animation for loading states */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Status indicator styles */
+.status-healthy {
+    @apply bg-green-500;
+}
+
+.status-degraded {
+    @apply bg-yellow-500;
+}
+
+.status-unhealthy {
+    @apply bg-red-500;
+}
+
+/* Responsive improvements */
+@media (max-width: 1024px) {
+    .prose {
+        @apply text-base;
+    }
+    
+    .prose h1 {
+        @apply text-2xl;
+    }
+    
+    .prose h2 {
+        @apply text-xl;
+    }
+}
+
+/* Custom scrollbar for results */
+#results-content {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+#results-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+#results-content::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded;
+}
+
+#results-content::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 rounded;
+}
+
+#results-content::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+}

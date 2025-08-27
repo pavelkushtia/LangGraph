@@ -110,11 +110,27 @@ print_status "Detected machine IP: $MACHINE_IP"
 
 # Backend .env
 cat > backend/.env << EOF
+# Database
+DATABASE_URL="file:../data/orchestrator.db"
+
+# Server Configuration
 NODE_ENV=development
 PORT=3001
 HOST=0.0.0.0
-DATABASE_PATH=../data/orchestrator.db
+
+# Redis Configuration (for job queues)
+REDIS_HOST=192.168.1.81
+REDIS_PORT=6379
+REDIS_PASSWORD=langgraph_redis_pass
+
+# Cluster Configuration
 CLUSTER_ORCHESTRATOR_PATH=/home/sanzad/ai-infrastructure/langgraph-config
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Debug
 DEBUG=langgraph:*
 EOF
 
@@ -127,9 +143,109 @@ EOF
 
 print_success "Environment files created"
 
+# Set up database with Prisma
+print_status "Setting up database schema..."
+cd backend
+
+# Create Prisma schema if it doesn't exist
+if [ ! -f "prisma/schema.prisma" ]; then
+    print_status "Initializing Prisma..."
+    npx prisma init --datasource-provider sqlite
+    
+    # Create workflow-specific database schema
+    cat > prisma/schema.prisma << 'EOF'
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Workflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  definition  String   // Stores the workflow graph as JSON string
+  category    String   @default("custom")
+  isTemplate  Boolean  @default(false)
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  executions WorkflowExecution[]
+  
+  @@map("workflows")
+}
+
+model WorkflowExecution {
+  id         String                @id @default(cuid())
+  workflowId String
+  status     String                @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, CANCELLED
+  input      String?               // Input parameters as JSON string
+  output     String?               // Execution results as JSON string
+  error      String?               // Error message if failed
+  progress   Float                 @default(0)
+  startedAt  DateTime?
+  completedAt DateTime?
+  createdAt  DateTime              @default(now())
+  
+  workflow   Workflow              @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  steps      WorkflowExecutionStep[]
+  
+  @@map("workflow_executions")
+}
+
+model WorkflowExecutionStep {
+  id          String   @id @default(cuid())
+  executionId String
+  nodeId      String   // References the node in the workflow definition
+  status      String   @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, SKIPPED
+  input       String?  // Input as JSON string
+  output      String?  // Output as JSON string
+  error       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  
+  execution   WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  
+  @@map("workflow_execution_steps")
+}
+
+model ClusterNode {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  ip          String   @unique
+  services    String   // Array of services as JSON string
+  status      String   @default("UNKNOWN") // ONLINE, OFFLINE, DEGRADED, UNKNOWN
+  lastSeen    DateTime?
+  resources   String?  // CPU, memory, disk usage as JSON string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("cluster_nodes")
+}
+EOF
+    print_success "Prisma schema created"
+fi
+
+# Generate Prisma client
+print_status "Generating database client..."
+npx prisma generate
+
+# Apply database schema
+print_status "Applying database schema..."
+npx prisma db push
+
+print_success "Database setup complete"
+
 # Build backend
 print_status "Building backend..."
-cd backend
 npm run build
 cd ..
 
