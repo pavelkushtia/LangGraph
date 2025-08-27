@@ -183,7 +183,7 @@ backend tools_servers
     balance roundrobin
     option httpchk GET /health
     
-    server tools_primary 192.168.1.105:8082 check inter 30s fall 3 rise 2
+    server tools_primary 192.168.1.190:8082 check inter 30s fall 3 rise 2
 
 # Embeddings Load Balancer  
 frontend embeddings_frontend
@@ -307,13 +307,13 @@ CLUSTER = ClusterConfig(
         health_endpoint="/health"
     ),
     worker_tools=MachineConfig(
-        ip="192.168.1.105",
+        ip="192.168.1.190",
         port=8082,
         service_type="tools",
         health_endpoint="/health"
     ),
     worker_monitor=MachineConfig(
-        ip="192.168.1.137",
+        ip="192.168.1.191",
         port=8083,
         service_type="monitoring",
         health_endpoint="/cluster_health"

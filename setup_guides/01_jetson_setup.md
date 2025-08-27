@@ -626,7 +626,7 @@ curl http://localhost:11434/api/tags
 
 ## Integration Points
 - **Load Balancer**: jetson-node is primary backend for HAProxy on cpu-node
-- **Monitoring**: Health checks from worker-node4 (192.168.1.137:8083)
+- **Monitoring**: Health checks from worker-node4 (192.168.1.191:8083)
 - **Coordination**: Managed by cluster orchestrator on cpu-node
 - **Network**: Accessible at http://192.168.1.177:11434 for cluster integration
 

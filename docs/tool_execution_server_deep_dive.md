@@ -2,7 +2,7 @@
 
 ## 🎯 What is the Tool Execution Server?
 
-The **Tool Execution Server** is the action hub of your LangGraph cluster that executes external operations and data gathering tasks. It runs on your **worker-node3 (192.168.1.105:8082)** and provides powerful capabilities for web search, web scraping, and safe command execution.
+The **Tool Execution Server** is the action hub of your LangGraph cluster that executes external operations and data gathering tasks. It runs on your **worker-node3 (192.168.1.190:8082)** and provides powerful capabilities for web search, web scraping, and safe command execution.
 
 ### Why Do We Need a Tool Execution Server?
 
@@ -19,7 +19,7 @@ The tool execution server solves a fundamental need: **AI agents need to interac
 ### Server Components
 
 ```text
-worker-node3 (192.168.1.105:8082)
+worker-node3 (192.168.1.190:8082)
 ├── FastAPI Web Server
 ├── Tool Services
 │   ├── Web Search Service (DuckDuckGo)
@@ -195,7 +195,7 @@ class WebSearchTool(BaseTool):
     def _run(self, query: str, max_results: int = 10) -> str:
         try:
             response = requests.post(
-                "http://192.168.1.105:8082/web_search",
+                "http://192.168.1.190:8082/web_search",
                 json={"query": query, "max_results": max_results},
                 timeout=30
             )
@@ -223,7 +223,7 @@ class WebScrapeTool(BaseTool):
     def _run(self, url: str, extract_text: bool = True, method: str = "requests") -> str:
         try:
             response = requests.post(
-                "http://192.168.1.105:8082/web_scrape",
+                "http://192.168.1.190:8082/web_scrape",
                 json={
                     "url": url, 
                     "extract_text": extract_text,
@@ -250,7 +250,7 @@ class CommandExecuteTool(BaseTool):
     def _run(self, command: str, timeout: int = 30, working_dir: str = "/tmp") -> str:
         try:
             response = requests.post(
-                "http://192.168.1.105:8082/execute_command",
+                "http://192.168.1.190:8082/execute_command",
                 json={
                     "command": command, 
                     "timeout": timeout,
@@ -670,13 +670,13 @@ backend tools_servers
     balance roundrobin
     option httpchk GET /health
     
-    server tools_primary 192.168.1.105:8082 check inter 30s fall 3 rise 2
+    server tools_primary 192.168.1.190:8082 check inter 30s fall 3 rise 2
     # server tools_secondary 192.168.1.106:8082 check inter 30s fall 3 rise 2  # Future expansion
 ```
 
 **Access Methods**:
 
-- **Direct**: `http://192.168.1.105:8082/web_search`
+- **Direct**: `http://192.168.1.190:8082/web_search`
 - **Load Balanced**: `http://192.168.1.81:9003/web_search`
 
 ### Failover Strategy
@@ -826,22 +826,22 @@ sudo journalctl -u tools-server -f
 sudo journalctl -u tools-server --since "1 hour ago"
 
 # Health Checks
-curl http://192.168.1.105:8082/health
-curl http://192.168.1.105:8082/stats
+curl http://192.168.1.190:8082/health
+curl http://192.168.1.190:8082/stats
 
 # Test Tools
 # Web Search Test
-curl -X POST http://192.168.1.105:8082/web_search \
+curl -X POST http://192.168.1.190:8082/web_search \
   -H "Content-Type: application/json" \
   -d '{"query": "test search", "max_results": 3}'
 
 # Web Scrape Test
-curl -X POST http://192.168.1.105:8082/web_scrape \
+curl -X POST http://192.168.1.190:8082/web_scrape \
   -H "Content-Type: application/json" \
   -d '{"url": "https://httpbin.org/html", "extract_text": true}'
 
 # Command Test
-curl -X POST http://192.168.1.105:8082/execute_command \
+curl -X POST http://192.168.1.190:8082/execute_command \
   -H "Content-Type: application/json" \
   -d '{"command": "echo Hello from tools server", "timeout": 10}'
 ```
@@ -872,14 +872,14 @@ export DISPLAY=:99
 ```bash
 # Check port accessibility
 netstat -ln | grep 8082
-telnet 192.168.1.105 8082
+telnet 192.168.1.190 8082
 
 # Configure firewall
 sudo ufw allow 8082/tcp
 sudo ufw status
 
 # Test from coordinator
-curl -v http://192.168.1.105:8082/health
+curl -v http://192.168.1.190:8082/health
 ```
 
 #### 3. Performance Issues

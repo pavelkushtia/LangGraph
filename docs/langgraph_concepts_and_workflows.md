@@ -34,7 +34,7 @@ graph TD
     subgraph "Physical Infrastructure"
         P[Jetson: 192.168.1.177:11434<br/>Models: llama3.2:3b, llama3.2:1b]
         Q[CPU: 192.168.1.81:11435<br/>Models: mistral:7b]
-        R[Tools: 192.168.1.105:8082<br/>Web Search, Scraping, Commands]
+        R[Tools: 192.168.1.190:8082<br/>Web Search, Scraping, Commands]
         S[Embeddings: 192.168.1.178:8081<br/>Semantic Search]
         T[Redis: 192.168.1.81:6379<br/>State Storage & Cache]
         U[HAProxy: 192.168.1.81:9000<br/>Load Balancer]
@@ -139,7 +139,7 @@ The router decides which service to use:
 def route_request(state: AgentState) -> str:
     message = state["messages"][-1].content.lower()
     
-    if "search" in message: return "needs_search"      # → Tools Node (192.168.1.105:8082)
+    if "search" in message: return "needs_search"      # → Tools Node (192.168.1.190:8082)
     elif len(message) > 200: return "complex_task"      # → CPU Ollama (192.168.1.81:11435)  
     else: return "simple_task"                          # → Jetson Ollama (192.168.1.177:11434)
 ```
@@ -204,7 +204,7 @@ graph TD
 CLUSTER = ClusterConfig(
     jetson_orin=MachineConfig(ip="192.168.1.177", port=11434, ...)  # → JetsonOllamaLLM
     cpu_coordinator=MachineConfig(ip="192.168.1.81", port=11435, ...)  # → CPULlamaLLM
-    worker_tools=MachineConfig(ip="192.168.1.105", port=8082, ...)     # → WebSearchTool
+    worker_tools=MachineConfig(ip="192.168.1.190", port=8082, ...)     # → WebSearchTool
 )
 ```
 
@@ -244,7 +244,7 @@ graph TD
         
         G -.->|DIRECT| J[Jetson: 192.168.1.177:11434]
         H -.->|DIRECT| K[CPU: 192.168.1.81:11435]
-        I -.->|DIRECT| L[Tools: 192.168.1.105:8082]
+        I -.->|DIRECT| L[Tools: 192.168.1.190:8082]
         I -.->|DIRECT| J
     end
     
@@ -296,7 +296,7 @@ User: "Research the latest AI developments and write a comprehensive analysis"
 │
 ├─ LangGraph Router: Detects "research" + long message
 ├─ Routes to: search_and_respond_node
-├─ Step 1: WebSearchTool → DIRECT to 192.168.1.105:8082 → Search results
+├─ Step 1: WebSearchTool → DIRECT to 192.168.1.190:8082 → Search results
 ├─ Step 2: complex_response_node 
 ├─ Uses: CPULlamaLLM → DIRECT to 192.168.1.81:11435
 ├─ Model: mistral:7b (powerful reasoning)
@@ -517,14 +517,14 @@ def enhanced_response_node(state: AgentState) -> AgentState:
 Your tools run on separate worker nodes and integrate seamlessly:
 
 ```python
-# Tool execution happens on worker-node3 (192.168.1.105:8082)
+# Tool execution happens on worker-node3 (192.168.1.190:8082)
 def search_and_respond_node(state: AgentState) -> AgentState:
     # 1. Extract search query from user message
     query = extract_search_query(state["messages"][-1].content)
     
     # 2. Call remote tool service
     search_results = requests.post(
-        "http://192.168.1.105:8082/web_search",
+        "http://192.168.1.190:8082/web_search",
         json={"query": query}
     ).json()
     

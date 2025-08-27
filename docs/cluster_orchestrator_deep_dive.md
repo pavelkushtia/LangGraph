@@ -61,8 +61,8 @@ cluster_machines = {
     "jetson": "192.168.1.177",        # Jetson Orin Nano 8GB
     "cpu_coordinator": "192.168.1.81", # Intel i5-6500T 32GB  
     "rp_embeddings": "192.168.1.178",  # ARM Cortex-A76 8GB
-    "worker_tools": "192.168.1.105",   # Intel i5 VM 6GB
-    "worker_monitor": "192.168.1.137"  # Intel i5 VM 6GB
+    "worker_tools": "192.168.1.190",   # Intel i5 VM 6GB
+    "worker_monitor": "192.168.1.191"  # Intel i5 VM 6GB
 }
 
 # Managed Services by Machine
@@ -122,7 +122,7 @@ Starting load balancer and monitoring...
   - LLM Load Balancer: http://192.168.1.81:9000
   - Tools Load Balancer: http://192.168.1.81:9001
   - Embeddings Load Balancer: http://192.168.1.81:9002
-  - Cluster Health: http://192.168.1.137:8083/cluster_health
+  - Cluster Health: http://192.168.1.191:8083/cluster_health
   - HAProxy Stats: http://192.168.1.81:9000/haproxy_stats
 ```
 
@@ -176,10 +176,10 @@ cpu_coordinator (192.168.1.81):
 rp_embeddings (192.168.1.178):
   embeddings-server: 🟢 Active
 
-worker_tools (192.168.1.105):
+worker_tools (192.168.1.190):
   tools-server: 🔴 Failed
 
-worker_monitor (192.168.1.137):
+worker_monitor (192.168.1.191):
   monitoring-server: 🟢 Active
 
 📡 Cluster Health Check:
@@ -446,7 +446,7 @@ async def morning_cluster_startup():
     
     # 4. Check health monitoring
     try:
-        health_response = requests.get("http://192.168.1.137:8083/cluster_health")
+        health_response = requests.get("http://192.168.1.191:8083/cluster_health")
         health_data = health_response.json()
         
         print(f"📊 Cluster Health: {health_data['overall_status'].upper()}")
@@ -501,7 +501,7 @@ class ClusterRecoveryManager:
         # Get current health status
         try:
             health_response = requests.get(
-                "http://192.168.1.137:8083/cluster_health", 
+                "http://192.168.1.191:8083/cluster_health", 
                 timeout=10
             )
             health_data = health_response.json()
@@ -585,7 +585,7 @@ class ClusterRecoveryManager:
         
         try:
             health_response = requests.get(
-                "http://192.168.1.137:8083/cluster_health",
+                "http://192.168.1.191:8083/cluster_health",
                 timeout=10
             )
             health_data = health_response.json()
@@ -626,7 +626,7 @@ class ClusterPerformanceOptimizer:
         
         # Get cluster health data
         try:
-            health_response = requests.get("http://192.168.1.137:8083/cluster_health")
+            health_response = requests.get("http://192.168.1.191:8083/cluster_health")
             health_data = health_response.json()
             
             performance_data["cluster_status"] = health_data["overall_status"]
@@ -1073,8 +1073,8 @@ class ConcurrentClusterManager:
         health_endpoints = [
             ("jetson_ollama", "http://192.168.1.177:11434/api/tags"),
             ("embeddings", "http://192.168.1.178:8081/health"),
-            ("tools", "http://192.168.1.105:8082/health"),
-            ("monitoring", "http://192.168.1.137:8083/health"),
+            ("tools", "http://192.168.1.190:8082/health"),
+            ("monitoring", "http://192.168.1.191:8083/health"),
             ("haproxy", "http://192.168.1.81:8888/health")
         ]
         
@@ -1257,7 +1257,7 @@ echo "*/10 * * * * cd ~/ai-infrastructure/langgraph-config && source ~/langgraph
 
 ```bash
 # Check SSH connectivity to all nodes
-for ip in 192.168.1.177 192.168.1.178 192.168.1.105 192.168.1.137; do
+for ip in 192.168.1.177 192.168.1.178 192.168.1.190 192.168.1.191; do
     echo "Testing SSH to $ip..."
     ssh -o ConnectTimeout=5 sanzad@$ip "echo 'SSH OK'" || echo "SSH FAILED to $ip"
 done
@@ -1265,8 +1265,8 @@ done
 # Fix SSH key issues
 ssh-copy-id sanzad@192.168.1.177  # Jetson
 ssh-copy-id sanzad@192.168.1.178  # rp-node
-ssh-copy-id sanzad@192.168.1.105  # worker-node3
-ssh-copy-id sanzad@192.168.1.137  # worker-node4
+ssh-copy-id sanzad@192.168.1.190  # worker-node3
+ssh-copy-id sanzad@192.168.1.191  # worker-node4
 
 # Test SSH without password prompt
 ssh -o BatchMode=yes sanzad@192.168.1.177 "echo 'Passwordless SSH working'"
@@ -1281,8 +1281,8 @@ python3 cluster_orchestrator.py start --debug
 # Check individual service logs
 ssh sanzad@192.168.1.177 "sudo journalctl -u ollama -f"
 ssh sanzad@192.168.1.178 "sudo journalctl -u embeddings-server -f"
-ssh sanzad@192.168.1.105 "sudo journalctl -u tools-server -f"
-ssh sanzad@192.168.1.137 "sudo journalctl -u monitoring-server -f"
+ssh sanzad@192.168.1.190 "sudo journalctl -u tools-server -f"
+ssh sanzad@192.168.1.191 "sudo journalctl -u monitoring-server -f"
 
 # Local services
 sudo journalctl -u redis-server -f
@@ -1302,10 +1302,10 @@ sudo journalctl -u haproxy -f
 python3 cluster_orchestrator.py status | grep "🔴"
 
 # Restart specific service
-ssh sanzad@192.168.1.105 "sudo systemctl restart tools-server"
+ssh sanzad@192.168.1.190 "sudo systemctl restart tools-server"
 
 # Check service health
-curl -v http://192.168.1.105:8082/health
+curl -v http://192.168.1.190:8082/health
 
 # Force restart problematic services
 python3 cluster_orchestrator.py stop
@@ -1320,7 +1320,7 @@ python3 cluster_orchestrator.py start
 
 ```bash
 # Check system resources on all nodes
-for ip in 192.168.1.177 192.168.1.81 192.168.1.178 192.168.1.105 192.168.1.137; do
+for ip in 192.168.1.177 192.168.1.81 192.168.1.178 192.168.1.190 192.168.1.191; do
     echo "=== Resources on $ip ==="
     ssh sanzad@$ip "free -h && df -h / && uptime"
 done
@@ -1329,7 +1329,7 @@ done
 time python3 cluster_orchestrator.py restart
 
 # Check network latency between nodes
-for ip in 192.168.1.177 192.168.1.178 192.168.1.105 192.168.1.137; do
+for ip in 192.168.1.177 192.168.1.178 192.168.1.190 192.168.1.191; do
     echo "Ping to $ip:"
     ping -c 3 $ip
 done
@@ -1347,8 +1347,8 @@ python3 cluster_orchestrator.py test --verbose
 # Test individual endpoints
 curl -v http://192.168.1.177:11434/api/tags
 curl -v http://192.168.1.178:8081/health
-curl -v http://192.168.1.105:8082/health
-curl -v http://192.168.1.137:8083/health
+curl -v http://192.168.1.190:8082/health
+curl -v http://192.168.1.191:8083/health
 curl -v http://192.168.1.81:8888/health
 
 # Test Redis separately

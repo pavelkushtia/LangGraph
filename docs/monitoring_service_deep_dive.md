@@ -2,7 +2,7 @@
 
 ## 🎯 What is the Monitoring Service?
 
-The **Monitoring Service** is the observability hub of your LangGraph cluster that continuously watches over all system components and provides real-time health insights. It runs on your **worker-node4 (192.168.1.137:8083)** and serves as the central nervous system for cluster health monitoring, alerting, and performance tracking.
+The **Monitoring Service** is the observability hub of your LangGraph cluster that continuously watches over all system components and provides real-time health insights. It runs on your **worker-node4 (192.168.1.191:8083)** and serves as the central nervous system for cluster health monitoring, alerting, and performance tracking.
 
 ### Why Do We Need a Monitoring Service?
 
@@ -19,7 +19,7 @@ The monitoring service solves a critical operational need: **you can't manage wh
 ### Server Components
 
 ```text
-worker-node4 (192.168.1.137:8083)
+worker-node4 (192.168.1.191:8083)
 ├── FastAPI Web Server
 ├── Health Monitoring Engine
 │   ├── Service Health Checkers
@@ -74,7 +74,7 @@ services = {
     },
     "tools": {
         "name": "Tools Server",
-        "url": "http://192.168.1.105:8082/health",
+        "url": "http://192.168.1.190:8082/health",
         "critical": True, 
         "timeout": 10
     },
@@ -246,7 +246,7 @@ GET /history?limit=10
 class LangGraphMonitoring:
     """Integration with LangGraph monitoring service"""
     
-    def __init__(self, monitoring_url: str = "http://192.168.1.137:8083"):
+    def __init__(self, monitoring_url: str = "http://192.168.1.191:8083"):
         self.monitoring_url = monitoring_url
         self.session = aiohttp.ClientSession()
     
@@ -762,13 +762,13 @@ backend monitoring_servers
     balance roundrobin
     option httpchk GET /health
     
-    server monitoring_primary 192.168.1.137:8083 check inter 30s fall 3 rise 2
+    server monitoring_primary 192.168.1.191:8083 check inter 30s fall 3 rise 2
     # server monitoring_secondary 192.168.1.138:8083 check inter 30s fall 3 rise 2  # Future redundancy
 ```
 
 **Access Methods**:
 
-- **Direct**: `http://192.168.1.137:8083/cluster_health`
+- **Direct**: `http://192.168.1.191:8083/cluster_health`
 - **Load Balanced**: `http://192.168.1.81:9004/cluster_health`
 
 ### Monitoring HAProxy Integration
@@ -873,21 +873,21 @@ sudo journalctl -u monitoring-server -f
 sudo journalctl -u monitoring-server --since "1 hour ago"
 
 # Health Checks
-curl http://192.168.1.137:8083/health
-curl http://192.168.1.137:8083/cluster_health
+curl http://192.168.1.191:8083/health
+curl http://192.168.1.191:8083/cluster_health
 
 # Test Monitoring Endpoints
 # Cluster Health
-curl -s http://192.168.1.137:8083/cluster_health | jq '.overall_status'
+curl -s http://192.168.1.191:8083/cluster_health | jq '.overall_status'
 
 # Get Alerts
-curl -s http://192.168.1.137:8083/alerts | jq '.alerts[]'
+curl -s http://192.168.1.191:8083/alerts | jq '.alerts[]'
 
 # Health History
-curl -s http://192.168.1.137:8083/history?limit=5 | jq '.history[].overall_status'
+curl -s http://192.168.1.191:8083/history?limit=5 | jq '.history[].overall_status'
 
 # Service Statistics
-curl -s http://192.168.1.137:8083/stats | jq '.services_monitored'
+curl -s http://192.168.1.191:8083/stats | jq '.services_monitored'
 ```
 
 ## 🔧 Troubleshooting
@@ -919,12 +919,12 @@ sudo fuser -k 8083/tcp  # Kill process using port
 # Check individual service health
 curl -v http://192.168.1.177:11434/api/tags  # Jetson
 curl -v http://192.168.1.178:8081/health    # Embeddings
-curl -v http://192.168.1.105:8082/health    # Tools
+curl -v http://192.168.1.190:8082/health    # Tools
 
 # Network connectivity
 ping 192.168.1.177  # Jetson
 ping 192.168.1.178  # rp-node
-ping 192.168.1.105  # worker-node3
+ping 192.168.1.190  # worker-node3
 
 # Firewall issues
 sudo ufw status
@@ -953,10 +953,10 @@ echo "0 2 * * 0 systemctl restart monitoring-server" | sudo crontab -e
 
 ```bash
 # Check alert frequency
-curl -s http://192.168.1.137:8083/alerts | jq '.count'
+curl -s http://192.168.1.191:8083/alerts | jq '.count'
 
 # Review alert history
-curl -s http://192.168.1.137:8083/history | jq '.history[].alerts | length'
+curl -s http://192.168.1.191:8083/history | jq '.history[].alerts | length'
 
 # Fixes:
 - Adjust service timeout values in monitoring_server.py

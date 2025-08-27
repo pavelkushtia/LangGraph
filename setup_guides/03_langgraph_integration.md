@@ -7,8 +7,8 @@ This guide integrates LangGraph with your distributed local model infrastructure
 - **jetson-node** (192.168.1.177) - Ollama server running
 - **cpu-node** (192.168.1.81) - llama.cpp + HAProxy + Redis running
 - **rp-node** (192.168.1.178) - Embeddings server (next step)
-- **worker-node3** (192.168.1.105) - Tools server (next step) 
-- **worker-node4** (192.168.1.137) - Monitoring server (next step)
+- **worker-node3** (192.168.1.190) - Tools server (next step) 
+- **worker-node4** (192.168.1.191) - Monitoring server (next step)
 
 ---
 
@@ -209,7 +209,7 @@ class WebSearchTool(BaseTool):
     def _run(self, query: str, max_results: int = 5) -> str:
         try:
             response = requests.post(
-                "http://192.168.1.105:8082/web_search",
+                "http://192.168.1.190:8082/web_search",
                 json={"query": query, "max_results": max_results},
                 timeout=30
             )
@@ -237,7 +237,7 @@ class WebScrapeTool(BaseTool):
     def _run(self, url: str, extract_text: bool = True) -> str:
         try:
             response = requests.post(
-                "http://192.168.1.105:8082/web_scrape",
+                "http://192.168.1.190:8082/web_scrape",
                 json={"url": url, "extract_text": extract_text},
                 timeout=30
             )
@@ -258,7 +258,7 @@ class CommandExecuteTool(BaseTool):
     def _run(self, command: str, timeout: int = 30) -> str:
         try:
             response = requests.post(
-                "http://192.168.1.105:8082/execute_command",
+                "http://192.168.1.190:8082/execute_command",
                 json={"command": command, "timeout": timeout},
                 timeout=timeout + 5
             )
@@ -695,8 +695,8 @@ CLUSTER = {
     "jetson_orin": "192.168.1.177:11434",        # Primary LLM
     "cpu_coordinator": "192.168.1.81:8080",      # Secondary LLM
     "rp_embeddings": "192.168.1.178:8081",       # Embeddings
-    "worker_tools": "192.168.1.105:8082",        # Tools
-    "worker_monitor": "192.168.1.137:8083"       # Monitoring
+    "worker_tools": "192.168.1.190:8082",        # Tools
+    "worker_monitor": "192.168.1.191:8083"       # Monitoring
 }
 ```
 
@@ -711,7 +711,7 @@ CLUSTER = {
 - ✅ **Complete**: LangGraph integration with local models and tools
 - ⏭️ **Next**: [04_distributed_coordination.md](04_distributed_coordination.md) - Setup remaining worker nodes
 - 🎯 **Test**: Run `python3 main_app.py` to test the complete workflow
-- 🔗 **Monitor**: Check cluster health at http://192.168.1.137:8083/cluster_health
+- 🔗 **Monitor**: Check cluster health at http://192.168.1.191:8083/cluster_health
 
 ## Advanced Features
 - **Intelligent Routing**: Automatically selects best model for each task

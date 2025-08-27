@@ -126,7 +126,7 @@ result = await data_workflow.invoke("Analyze this dataset: https://...")
 
 ```bash
 # Check cluster health
-curl http://192.168.1.137:8083/cluster_health
+curl http://192.168.1.191:8083/cluster_health
 
 # View load balancer stats
 open http://192.168.1.81:9000/haproxy_stats

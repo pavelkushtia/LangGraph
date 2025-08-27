@@ -17,8 +17,8 @@ graph TB
     
     subgraph "Worker Nodes"
         RPI["rp-node (192.168.1.178)<br/>Embeddings + Vector Search"]
-        W3["worker-node3 (192.168.1.105)<br/>Tool Execution"]
-        W4["worker-node4 (192.168.1.137)<br/>Monitoring + Logging"]
+        W3["worker-node3 (192.168.1.190)<br/>Tool Execution"]
+        W4["worker-node4 (192.168.1.191)<br/>Monitoring + Logging"]
     end
     
     subgraph "Storage Layer"
@@ -52,8 +52,8 @@ graph LR
         J["jetson-node<br/>192.168.1.177:11434<br/>Ollama API"]
         C1["cpu-node<br/>192.168.1.81:11435<br/>Ollama + HAProxy:9000"]
         C2["rp-node<br/>192.168.1.178:8081<br/>Embeddings API"]
-        C3["worker-node3<br/>192.168.1.105:8082<br/>Tools API"]
-        C4["worker-node4<br/>192.168.1.137:8083<br/>Monitoring"]
+        C3["worker-node3<br/>192.168.1.190:8082<br/>Tools API"]
+        C4["worker-node4<br/>192.168.1.191:8083<br/>Monitoring"]
         C5["cpu-node<br/>192.168.1.81:6379<br/>Redis Cache"]
     end
     
@@ -237,8 +237,8 @@ graph TB
 | Jetson Orin Nano | jetson-node | 192.168.1.177 | 11434 | Primary LLM (Ollama) |
 | CPU 32GB Coordinator | cpu-node | 192.168.1.81 | 8080, 9000, 6379 | Heavy LLM + Load Balancer + Redis |
 | ARM 8GB | rp-node | 192.168.1.178 | 8081 | Embeddings Server |
-| VM 6GB Tools | worker-node3 | 192.168.1.105 | 8082 | Tools Server |
-| VM 6GB Monitor | worker-node4 | 192.168.1.137 | 8083 | Monitoring |
+| VM 6GB Tools | worker-node3 | 192.168.1.190 | 8082 | Tools Server |
+| VM 6GB Monitor | worker-node4 | 192.168.1.191 | 8083 | Monitoring |
 
 **Load Balanced Endpoints:**
 - LLM: `http://192.168.1.81:9000`
@@ -249,7 +249,7 @@ graph TB
 - ✅ jetson-node (192.168.1.177) - Jetson Orin Nano 8GB
 - ✅ cpu-node (192.168.1.81) - 32GB RAM Intel i5-6500T
 - ✅ rp-node (192.168.1.178) - 8GB ARM Cortex-A76
-- ✅ worker-node3 (192.168.1.105) - 6GB VM
-- ✅ worker-node4 (192.168.1.137) - 6GB VM
+- ✅ worker-node3 (192.168.1.190) - 6GB VM
+- ✅ worker-node4 (192.168.1.191) - 6GB VM
 - ❌ cpu-node1, cpu-node2 - Currently unavailable
 - ❌ gpu-node, gpu-node1 - Currently unavailable

@@ -37,8 +37,8 @@ ssh-keygen -t rsa -b 4096 -f ~/.ssh/cluster_key
 # Copy to all machines
 ssh-copy-id -i ~/.ssh/cluster_key.pub sanzad@192.168.1.177  # jetson-node
 ssh-copy-id -i ~/.ssh/cluster_key.pub sanzad@192.168.1.178  # rp-node
-ssh-copy-id -i ~/.ssh/cluster_key.pub sanzad@192.168.1.105  # worker-node3
-ssh-copy-id -i ~/.ssh/cluster_key.pub sanzad@192.168.1.137  # worker-node4
+ssh-copy-id -i ~/.ssh/cluster_key.pub sanzad@192.168.1.190  # worker-node3
+ssh-copy-id -i ~/.ssh/cluster_key.pub sanzad@192.168.1.191  # worker-node4
 ```
 
 ## Load Balancing and Failover
@@ -82,7 +82,7 @@ frontend tools_frontend
 
 backend tools_servers
     balance roundrobin
-    server tools_primary 192.168.1.105:8082 check
+    server tools_primary 192.168.1.190:8082 check
 
 # Embeddings Load Balancer
 frontend embeddings_frontend
@@ -146,7 +146,7 @@ SERVICES = {
         'critical': True
     },
     'tools': {
-        'url': 'http://192.168.1.105:8082/health',
+        'url': 'http://192.168.1.190:8082/health',
         'critical': True
     },
     'haproxy': {
@@ -223,7 +223,7 @@ class HealthMonitor:
             'jetson_ollama': 'ssh -i ~/.ssh/cluster_key sanzad@192.168.1.177 "sudo systemctl restart ollama"',
             'cpu_llama': 'ssh -i ~/.ssh/cluster_key sanzad@192.168.1.81 "sudo systemctl restart llama-server"',
             'embeddings': 'ssh -i ~/.ssh/cluster_key sanzad@192.168.1.178 "sudo systemctl restart embeddings-server"',
-            'tools': 'ssh -i ~/.ssh/cluster_key sanzad@192.168.1.105 "sudo systemctl restart tools-server"'
+            'tools': 'ssh -i ~/.ssh/cluster_key sanzad@192.168.1.190 "sudo systemctl restart tools-server"'
         }
         
         if service_name in restart_commands:
@@ -320,7 +320,7 @@ class ModelScaler:
         """Get system load from a machine"""
         try:
             # Use worker-node4 for monitoring
-            response = requests.get(f"http://192.168.1.137:8083/system_stats", timeout=5)
+            response = requests.get(f"http://192.168.1.191:8083/system_stats", timeout=5)
             if response.status_code == 200:
                 return response.json()
         except:
@@ -415,8 +415,8 @@ class ClusterOrchestrator:
             'jetson': '192.168.1.177',      # jetson-node (Orin Nano 8GB)
             'cpu_32gb': '192.168.1.81',     # cpu-node (32GB coordinator)
             'rp_node': '192.168.1.178',     # rp-node (8GB ARM, embeddings)
-            'worker_3': '192.168.1.105',    # worker-node3 (6GB VM, tools)
-            'worker_4': '192.168.1.137'     # worker-node4 (6GB VM, monitoring)
+            'worker_3': '192.168.1.190',    # worker-node3 (6GB VM, tools)
+            'worker_4': '192.168.1.191'     # worker-node4 (6GB VM, monitoring)
         }
     
     def start_cluster(self):

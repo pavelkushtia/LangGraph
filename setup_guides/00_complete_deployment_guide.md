@@ -16,8 +16,8 @@ This guide provides **step-by-step commands** to deploy your revised LangGraph a
 | **Primary LLM** | jetson-node | 192.168.1.177 | 8GB | ARM Cortex-A78AE | Ollama + TensorRT + Triton |
 | **Coordinator** | cpu-node | 192.168.1.81 | 32GB | Intel i5-6500T | LangGraph + Heavy LLM + HAProxy + Redis |
 | **Embeddings** | rp-node | 192.168.1.178 | 8GB | ARM Cortex-A76 | Vector processing |
-| **Tools** | worker-node3 | 192.168.1.105 | 6GB | Intel i5 VM | Web scraping, APIs |
-| **Monitoring** | worker-node4 | 192.168.1.137 | 6GB | Intel i5 VM | Health checks, alerts |
+| **Tools** | worker-node3 | 192.168.1.190 | 6GB | Intel i5 VM | Web scraping, APIs |
+| **Monitoring** | worker-node4 | 192.168.1.191 | 6GB | Intel i5 VM | Health checks, alerts |
 
 ---
 
@@ -929,7 +929,7 @@ backend tools_servers
     balance roundrobin
     option httpchk GET /health
     
-    server tools_primary 192.168.1.105:8082 check inter 30s fall 3 rise 2
+    server tools_primary 192.168.1.190:8082 check inter 30s fall 3 rise 2
 
 # Embeddings Load Balancer  
 frontend embeddings_frontend
@@ -1057,13 +1057,13 @@ CLUSTER = ClusterConfig(
         health_endpoint="/health"
     ),
     worker_tools=MachineConfig(
-        ip="192.168.1.105",
+        ip="192.168.1.190",
         port=8082,
         service_type="tools",
         health_endpoint="/health"
     ),
     worker_monitor=MachineConfig(
-        ip="192.168.1.137",
+        ip="192.168.1.191",
         port=8083,
         service_type="monitoring",
         health_endpoint="/cluster_health"
@@ -1381,13 +1381,13 @@ echo "✅ rp-node embeddings server setup completed!"
 
 ## 🛠️ Phase 4: worker-node3 Setup (Tools Execution Server)
 
-**Machine**: worker-node3 (192.168.1.105) - 6GB VM
+**Machine**: worker-node3 (192.168.1.190) - 6GB VM
 
 ### Step 4.1: Tools Server Preparation
 
 ```bash
 # SSH into worker-node3
-ssh sanzad@192.168.1.105
+ssh sanzad@192.168.1.190
 
 # Update system
 sudo apt update && sudo apt upgrade -y
@@ -1779,13 +1779,13 @@ echo "✅ worker-node3 tools server setup completed!"
 
 ## 📊 Phase 5: worker-node4 Setup (Monitoring Server)
 
-**Machine**: worker-node4 (192.168.1.137) - 6GB VM
+**Machine**: worker-node4 (192.168.1.191) - 6GB VM
 
 ### Step 5.1: Monitoring Server Preparation
 
 ```bash
 # SSH into worker-node4
-ssh sanzad@192.168.1.137
+ssh sanzad@192.168.1.191
 
 # Update system
 sudo apt update && sudo apt upgrade -y
@@ -1876,7 +1876,7 @@ class MonitoringService:
                 'name': 'Embeddings Server'
             },
             'tools': {
-                'url': 'http://192.168.1.105:8082/health',
+                'url': 'http://192.168.1.190:8082/health',
                 'critical': True,
                 'timeout': 10,
                 'name': 'Tools Server'
@@ -2252,8 +2252,8 @@ class ClusterOrchestrator:
             'jetson': '192.168.1.177',      # jetson-node (Orin Nano 8GB)
             'cpu_coordinator': '192.168.1.81',     # cpu-node (32GB coordinator)
             'rp_embeddings': '192.168.1.178',     # rp-node (8GB ARM, embeddings)
-            'worker_tools': '192.168.1.105',    # worker-node3 (6GB VM, tools)
-            'worker_monitor': '192.168.1.137'     # worker-node4 (6GB VM, monitoring)
+            'worker_tools': '192.168.1.190',    # worker-node3 (6GB VM, tools)
+            'worker_monitor': '192.168.1.191'     # worker-node4 (6GB VM, monitoring)
         }
     
     def start_cluster(self):
@@ -2288,7 +2288,7 @@ class ClusterOrchestrator:
         print(f"  - LLM Load Balancer: http://192.168.1.81:9000")
         print(f"  - Tools Load Balancer: http://192.168.1.81:9001")
         print(f"  - Embeddings Load Balancer: http://192.168.1.81:9002")
-        print(f"  - Cluster Health: http://192.168.1.137:8083/cluster_health")
+        print(f"  - Cluster Health: http://192.168.1.191:8083/cluster_health")
         print(f"  - HAProxy Stats: http://192.168.1.81:9000/haproxy_stats")
     
     def stop_cluster(self):
@@ -2335,7 +2335,7 @@ class ClusterOrchestrator:
         # Check cluster health
         print(f"\n📡 Cluster Health Check:")
         try:
-            response = requests.get('http://192.168.1.137:8083/cluster_health', timeout=10)
+            response = requests.get('http://192.168.1.191:8083/cluster_health', timeout=10)
             if response.status_code == 200:
                 health = response.json()
                 print(f"  Overall Status: {health['overall_status'].upper()}")
@@ -2353,8 +2353,8 @@ class ClusterOrchestrator:
             ("Jetson Ollama", "http://192.168.1.177:11434/api/tags"),
             ("CPU Llama.cpp", "http://192.168.1.81:8080/health"),
             ("Embeddings Server", "http://192.168.1.178:8081/health"),
-            ("Tools Server", "http://192.168.1.105:8082/health"),
-            ("Monitoring Server", "http://192.168.1.137:8083/health"),
+            ("Tools Server", "http://192.168.1.190:8082/health"),
+            ("Monitoring Server", "http://192.168.1.191:8083/health"),
             ("Load Balancer", "http://192.168.1.81:8888/health"),
             ("Redis", "http://192.168.1.81:6379")  # This will fail, Redis doesn't have HTTP
         ]
@@ -2489,7 +2489,7 @@ curl -X POST http://192.168.1.81:9001/web_search \
 
 # Check cluster health
 echo "Checking cluster health..."
-curl http://192.168.1.137:8083/cluster_health | jq .
+curl http://192.168.1.191:8083/cluster_health | jq .
 
 echo ""
 echo "✅ Cluster testing completed!"
@@ -2539,7 +2539,7 @@ echo "  - ~/cluster_status.sh"
 - **LLM Load Balancer**: http://192.168.1.81:9000
 - **Tools Load Balancer**: http://192.168.1.81:9001
 - **Embeddings Load Balancer**: http://192.168.1.81:9002
-- **Cluster Health Monitor**: http://192.168.1.137:8083/cluster_health
+- **Cluster Health Monitor**: http://192.168.1.191:8083/cluster_health
 - **HAProxy Statistics**: http://192.168.1.81:9000/haproxy_stats (admin/langgraph_admin_2024)
 
 #### **🎯 Quick Commands:**
