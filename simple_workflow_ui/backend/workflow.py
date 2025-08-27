@@ -135,13 +135,13 @@ Please provide:
 Format your response clearly with headings and bullet points."""
 
                 response = requests.post(
-                    "http://192.168.1.81:11435/api/generate",
+                    "http://192.168.1.177:11434/api/generate",
                     json={
-                        "model": "mistral:7b", 
+                        "model": "llama3.2:3b", 
                         "prompt": prompt,
                         "stream": False
                     },
-                    timeout=90
+                    timeout=60
                 )
                 
                 if response.status_code == 200:
