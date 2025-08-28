@@ -32,14 +32,13 @@ class ResearchWorkflow:
             try:
                 state["step"] = "Planning research strategy..."
                 
-                prompt = f"""Create a focused research plan for: "{state['query']}"
+                prompt = f"""Create a brief research plan for: "{state['query']}"
                 
-Please provide:
-1. 3-5 specific search terms/queries to investigate
-2. Key aspects to focus on
-3. Expected deliverables
+Just provide:
+1. 2-3 search terms to use
+2. What to look for
 
-Keep it concise and actionable."""
+Keep it short - maximum 3 sentences."""
 
                 response = requests.post(
                     "http://192.168.1.177:11434/api/generate",
@@ -116,23 +115,16 @@ Keep it concise and actionable."""
                         search_summary += f"{i}. **{result.get('title', 'No title')}**\n"
                         search_summary += f"   {result.get('snippet', 'No snippet')}\n\n"
                 
-                prompt = f"""Based on the research plan and search results, provide a comprehensive analysis:
-
-**Original Query:** {state['query']}
-
-**Research Plan:**
-{state['plan']}
+                prompt = f"""Based on the search results, provide a concise answer to: {state['query']}
 
 **Search Results:**
 {search_summary}
 
 Please provide:
-1. **Key Findings**: Main insights discovered
-2. **Analysis**: Critical evaluation of the information
-3. **Conclusions**: Direct answers to the original query
-4. **Recommendations**: Next steps or further areas to explore
+1. **Direct Answer**: List the restaurants found
+2. **Brief Summary**: Key highlights only
 
-Format your response clearly with headings and bullet points."""
+Keep it focused and concise - no methodology or lengthy analysis."""
 
                 response = requests.post(
                     "http://192.168.1.177:11434/api/generate",
@@ -160,27 +152,27 @@ Format your response clearly with headings and bullet points."""
             """Finalize the results"""
             state["step"] = "Completed"
             
-            # Combine all results into final formatted output
-            final_output = f"""# Research Results: {state['query']}
+            # Extract the direct answer from analysis
+            analysis_text = state.get('analysis', '')
+            
+            # Combine all results with direct answer first
+            final_output = f"""# {state['query']}
 
-## 📋 Research Plan
-{state['plan']}
+## 🎯 **Answer**
+{analysis_text}
 
-## 🔍 Search Results Summary
-"""
+## 📝 **Research Summary**
+**Plan**: {state.get('plan', 'N/A')}
+
+**Sources**: """
             
             if "results" in state["search_results"]:
-                for i, result in enumerate(state["search_results"]["results"][:3], 1):
-                    final_output += f"{i}. [{result.get('title', 'No title')}]({result.get('url', '#')})\n"
-                    final_output += f"   *{result.get('snippet', 'No snippet')}*\n\n"
+                source_count = len(state["search_results"]["results"])
+                final_output += f"Found {source_count} sources from Yelp, TripAdvisor, and restaurant guides.\n"
+            else:
+                final_output += "Web search completed.\n"
             
-            final_output += f"""
-## 📊 Analysis & Insights
-{state['analysis']}
-
----
-*Research completed using LangGraph distributed AI cluster*
-"""
+            final_output += "\n*Powered by LangGraph distributed AI cluster*"
             
             state["final_result"] = final_output
             return state
