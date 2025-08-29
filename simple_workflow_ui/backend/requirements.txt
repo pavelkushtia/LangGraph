@@ -1,9 +1,25 @@
+# Core FastAPI Stack (stable versions)
 fastapi==0.104.1
 uvicorn==0.24.0
+pydantic>=2.0.0,<3.0.0
+
+# LangGraph and AI
 langgraph>=0.0.55
 langchain>=0.2.0
-requests==2.31.0
-markdown==3.5.1
+
+# HTTP and File Handling
+requests>=2.31.0
 python-multipart==0.0.6
-jinja2==3.1.2
+jinja2>=3.1.2
 aiofiles>=24.1.0
+
+# LLM Output Formatting (simplified)
+rich>=13.0.0
+markdown>=3.5.0
+
+# Structured outputs (lightweight)
+typing-extensions>=4.5.0
+
+# Professional query routing and classification
+langchain-experimental>=0.0.50
+scikit-learn>=1.3.0
