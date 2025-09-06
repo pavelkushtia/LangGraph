@@ -28,23 +28,31 @@ sudo apt install -y build-essential cmake pkg-config
 sudo apt install -y libssl-dev libffi-dev python3-dev
 ```
 
-### 1.2 CUDA Installation
+### 1.2 CUDA Installation (Fixed Method)
 
 ```bash
 # Check GPU
 nvidia-smi
 
-# Install CUDA toolkit (adjust version based on your GPU)
-wget https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda_11.8.0_520.61.05_linux.run
-sudo sh cuda_11.8.0_520.61.05_linux.run
+# Method 1: Install CUDA via apt (Recommended - more reliable)
+# Add NVIDIA package repository
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.0-1_all.deb
+sudo dpkg -i cuda-keyring_1.0-1_all.deb
+sudo apt update
+
+# Install CUDA toolkit
+sudo apt install -y cuda-toolkit-12-2
 
 # Add CUDA to PATH
-echo 'export PATH=/usr/local/cuda-11.8/bin:$PATH' >> ~/.bashrc
-echo 'export LD_LIBRARY_PATH=/usr/local/cuda-11.8/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+echo 'export PATH=/usr/local/cuda-12.2/bin:$PATH' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=/usr/local/cuda-12.2/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
 source ~/.bashrc
 
 # Verify CUDA installation
 nvcc --version
+
+# Alternative Method 2: If Method 1 fails, use conda (fallback)
+# conda install -c conda-forge cudatoolkit=11.8
 ```
 
 ### 1.3 Python Environment Setup
@@ -57,8 +65,8 @@ source ~/trading-env/bin/activate
 # Upgrade pip
 pip install --upgrade pip setuptools wheel
 
-# Install PyTorch with CUDA support
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+# Install PyTorch with CUDA support (updated for CUDA 12.2)
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
 # Verify PyTorch CUDA support
 python3 -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}'); print(f'CUDA version: {torch.version.cuda}')"
@@ -595,6 +603,23 @@ print(f'GPU memory: {torch.cuda.memory_allocated() / 1024**3:.2f} GB')
 ## 🚨 Troubleshooting
 
 ### Common Issues
+
+**NVIDIA Repository Error (E: The repository 'https://nvidia.github.io/libnvidia-container/stable/deb Release' does not have a Release file)**
+```bash
+# Fix 1: Remove problematic repository
+sudo rm -f /etc/apt/sources.list.d/nvidia-libnvidia-container-*.list
+
+# Fix 2: Use alternative CUDA installation method
+# Install CUDA via conda (more reliable)
+conda install -c conda-forge cudatoolkit=11.8
+
+# Fix 3: Use PyTorch with conda CUDA
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+
+# Fix 4: Manual CUDA installation (if all else fails)
+wget https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda_11.8.0_520.61.05_linux.run
+sudo sh cuda_11.8.0_520.61.05_linux.run --silent --toolkit
+```
 
 **Out of GPU Memory**
 ```bash
